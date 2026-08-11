@@ -1,0 +1,79 @@
+/* ============================================
+   REUSABLE COMPONENTS — buttons, inputs, cards
+   ============================================ */
+
+.card {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+input[type="text"],
+input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+}
+
+.btn {
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background-color 0.15s ease;
+}
+
+/* ---------- TOP NAVIGATION ---------- */
+
+.app-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-surface);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    margin-bottom: var(--space-lg);
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.app-nav__brand {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-primary);
+}
+
+.app-nav__links {
+    display: flex;
+    gap: var(--space-lg);
+}
+
+.app-nav__links a {
+    text-decoration: none;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 6px 4px;
+    border-bottom: 2px solid transparent;
+}
+
+.app-nav__links a:hover {
+    color: var(--color-text);
+}
+
+.app-nav__links a.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+

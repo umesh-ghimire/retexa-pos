@@ -1,0 +1,53 @@
+/* ============================================
+   BASE STYLES — shared across the whole app
+   ============================================ */
+
+:root {
+    /* Color palette */
+    --color-bg: #f4f6f8;
+    --color-surface: #ffffff;
+    --color-primary: #1e3a8a;
+    --color-primary-dark: #16296b;
+    --color-accent: #0d9488;
+    --color-danger: #dc2626;
+    --color-text: #1f2937;
+    --color-text-muted: #6b7280;
+    --color-border: #e2e8f0;
+
+    /* Spacing */
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+
+    /* Radius */
+    --radius: 8px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+.app-main {
+    min-height: 100vh;
+    padding: var(--space-lg);
+}
+
+input {
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+}
