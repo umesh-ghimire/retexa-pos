@@ -1,19 +1,14 @@
 /* ============================================
-   BILLING SCREEN LOGIC
-   Handles: calculator input, normal mode item
-   entry, product search mode, bill totals,
-   and change calculation.
+   BILLING SCREEN LOGIC (database-connected)
    ============================================ */
 
-// ---------- STATE ----------
-// This object holds everything about the current bill in memory.
 const billState = {
-    items: [],          // array of { name, price }
-    mode: "normal",      // "normal" or "product"
-    currentInput: "",    // what's currently typed on the calculator display
+    items: [],          // { name, unit_price, quantity, line_total, product_id, unit_id, unit_label }
+    mode: "normal",
+    currentInput: "",
+    finalized: false,
 };
 
-// ---------- DOM ELEMENTS ----------
 const displayValueEl = document.getElementById("displayValue");
 const displayModeEl = document.getElementById("displayMode");
 const billItemsEl = document.getElementById("billItems");
@@ -24,6 +19,8 @@ const changeValueEl = document.getElementById("changeValue");
 const discountInputEl = document.getElementById("discountInput");
 const cashInputEl = document.getElementById("cashInput");
 const billDateEl = document.getElementById("billDate");
+const billNumberEl = document.getElementById("billNumber");
+const shopNameEl = document.getElementById("shopName");
 
 const productSearchBoxEl = document.getElementById("productSearchBox");
 const productSearchInputEl = document.getElementById("productSearchInput");
@@ -32,17 +29,17 @@ const productSuggestionsEl = document.getElementById("productSuggestions");
 const receiptOverlayEl = document.getElementById("receiptOverlay");
 const receiptContentEl = document.getElementById("receiptContent");
 const showBillBtnEl = document.getElementById("showBillBtn");
+const newBillBtnEl = document.getElementById("newBillBtn");
 const closeReceiptBtnEl = document.getElementById("closeReceiptBtn");
 const printReceiptBtnEl = document.getElementById("printReceiptBtn");
-const billNumberEl = document.getElementById("billNumber");
-const shopNameEl = document.getElementById("shopName");
 
-// ---------- INITIAL SETUP ----------
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
 billDateEl.textContent = getTodayDateString();
 renderDisplay();
 renderBill();
 
-// ---------- CALCULATOR BUTTON HANDLING ----------
+// ---------- CALCULATOR BUTTONS ----------
 
 document.querySelectorAll(".calc-btn").forEach((button) => {
     button.addEventListener("click", () => {
@@ -63,51 +60,36 @@ document.querySelectorAll(".calc-btn").forEach((button) => {
     });
 });
 
-/**
- * Handles number/decimal key presses (0-9, .)
- */
 function handleNumberKey(key) {
-    // Prevent multiple decimal points
-    if (key === "." && billState.currentInput.includes(".")) {
-        return;
-    }
+    if (key === "." && billState.currentInput.includes(".")) return;
     billState.currentInput += key;
     renderDisplay();
 }
 
-/**
- * Clears the current input completely (does not remove bill items).
- */
 function handleClear() {
     billState.currentInput = "";
     exitProductMode();
     renderDisplay();
 }
 
-/**
- * Removes the last typed character.
- */
 function handleBackspace() {
     billState.currentInput = billState.currentInput.slice(0, -1);
     renderDisplay();
 }
 
-/**
- * ENTER button: adds the typed amount as a new default item
- * (Item 1, Item 2, Item 3, etc.)
- */
 function handleEnter() {
     const amount = parseFloat(billState.currentInput);
-
-    // Validation: ignore empty or invalid input
-    if (!billState.currentInput || isNaN(amount) || amount <= 0) {
-        return;
-    }
+    if (!billState.currentInput || isNaN(amount) || amount <= 0) return;
 
     const itemNumber = billState.items.length + 1;
     billState.items.push({
         name: `Item ${itemNumber}`,
-        price: amount,
+        unit_price: amount,
+        quantity: 1,
+        line_total: amount,
+        product_id: null,
+        unit_id: null,
+        unit_label: null,
     });
 
     billState.currentInput = "";
@@ -115,9 +97,6 @@ function handleEnter() {
     renderBill();
 }
 
-/**
- * Switches the calculator into PRODUCT search mode.
- */
 function handleProductMode() {
     billState.mode = "product";
     billState.currentInput = "";
@@ -129,32 +108,24 @@ function handleProductMode() {
     renderProductSuggestions("");
 }
 
-/**
- * Exits PRODUCT mode and returns to normal calculator mode.
- */
 function exitProductMode() {
     billState.mode = "normal";
     productSearchBoxEl.style.display = "none";
     productSuggestionsEl.innerHTML = "";
 }
 
-// ---------- PRODUCT SEARCH ----------
+// ---------- PRODUCT SEARCH (real database products) ----------
 
 productSearchInputEl.addEventListener("input", () => {
     renderProductSuggestions(productSearchInputEl.value);
 });
 
-/**
- * Filters dummyProducts by the typed search text and displays matches.
- */
 function renderProductSuggestions(searchText) {
     const query = searchText.trim().toLowerCase();
 
     const matches = query === ""
-        ? dummyProducts
-        : dummyProducts.filter((product) =>
-            product.name.toLowerCase().startsWith(query)
-          );
+        ? realProducts
+        : realProducts.filter((p) => p.name.toLowerCase().startsWith(query));
 
     productSuggestionsEl.innerHTML = "";
 
@@ -167,21 +138,37 @@ function renderProductSuggestions(searchText) {
         const item = document.createElement("div");
         item.className = "product-suggestion-item";
         item.innerHTML = `
-            <span>${product.name}</span>
-            <span class="price">${formatCurrency(product.price)}</span>
+            <span class="suggestion-info">${product.name} — ${formatCurrency(product.price)}${product.unit ? " / " + product.unit : ""}</span>
+            <input type="number" class="suggestion-qty" value="1" min="0.001" step="0.001">
+            <button type="button" class="suggestion-add-btn">Add</button>
         `;
-        item.addEventListener("click", () => addProductToBill(product));
+        item.querySelector(".suggestion-add-btn").addEventListener("click", () => {
+            const qtyInput = item.querySelector(".suggestion-qty");
+            const quantity = parseFloat(qtyInput.value);
+
+            if (isNaN(quantity) || quantity <= 0) {
+                alert("Please enter a valid quantity.");
+                return;
+            }
+            if (quantity > product.stock) {
+                alert(`Only ${product.stock} ${product.unit || ""} of "${product.name}" available in stock.`);
+                return;
+            }
+            addProductToBill(product, quantity);
+        });
         productSuggestionsEl.appendChild(item);
     });
 }
 
-/**
- * Adds a selected inventory product to the bill using its stored price.
- */
-function addProductToBill(product) {
+function addProductToBill(product, quantity) {
     billState.items.push({
         name: product.name,
-        price: product.price,
+        unit_price: product.price,
+        quantity: quantity,
+        line_total: Math.round(product.price * quantity * 100) / 100,
+        product_id: product.id,
+        unit_id: product.unit_id,
+        unit_label: product.unit,
     });
 
     exitProductMode();
@@ -190,22 +177,11 @@ function addProductToBill(product) {
 
 // ---------- RENDERING ----------
 
-/**
- * Updates the calculator display (mode label + current typed value).
- */
 function renderDisplay() {
-    displayModeEl.textContent = billState.mode === "product"
-        ? "PRODUCT MODE"
-        : "NORMAL MODE";
-
-    displayValueEl.textContent = billState.currentInput === ""
-        ? "0"
-        : billState.currentInput;
+    displayModeEl.textContent = billState.mode === "product" ? "PRODUCT MODE" : "NORMAL MODE";
+    displayValueEl.textContent = billState.currentInput === "" ? "0" : billState.currentInput;
 }
 
-/**
- * Redraws the full list of bill items and recalculates totals.
- */
 function renderBill() {
     billItemsEl.innerHTML = "";
 
@@ -216,19 +192,25 @@ function renderBill() {
     }
 
     billState.items.forEach((item, index) => {
+        const quantityLabel = item.unit_label
+            ? `${trimZeros(item.quantity)} ${item.unit_label} × ${formatCurrency(item.unit_price)}`
+            : "";
+
         const row = document.createElement("div");
         row.className = "bill-item-row";
         row.innerHTML = `
-            <span class="item-name">${item.name}</span>
+            <span class="item-name">
+                ${item.name}
+                ${quantityLabel ? `<br><small style="color:#6b7280;">${quantityLabel}</small>` : ""}
+            </span>
             <div class="item-actions">
-                <span class="item-price">${formatCurrency(item.price)}</span>
+                <span class="item-price">${formatCurrency(item.line_total)}</span>
                 <button class="remove-btn" data-index="${index}">✕</button>
             </div>
         `;
         billItemsEl.appendChild(row);
     });
 
-    // Attach remove handlers
     document.querySelectorAll(".remove-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
             const index = parseInt(btn.getAttribute("data-index"));
@@ -240,12 +222,12 @@ function renderBill() {
     updateTotals();
 }
 
-/**
- * Recalculates subtotal, grand total, and change based on
- * current bill items, discount input, and cash input.
- */
+function trimZeros(num) {
+    return parseFloat(num).toString();
+}
+
 function updateTotals() {
-    const subtotal = billState.items.reduce((sum, item) => sum + item.price, 0);
+    const subtotal = billState.items.reduce((sum, item) => sum + item.line_total, 0);
     const discount = parseFloat(discountInputEl.value) || 0;
     const grandTotal = Math.max(subtotal - discount, 0);
     const cash = parseFloat(cashInputEl.value) || 0;
@@ -256,20 +238,76 @@ function updateTotals() {
     changeValueEl.textContent = formatCurrency(change > 0 ? change : 0);
 }
 
-// Recalculate totals live when discount or cash values change
 discountInputEl.addEventListener("input", updateTotals);
 cashInputEl.addEventListener("input", updateTotals);
 
-// ---------- SHOW BILL / RECEIPT ----------
+// ---------- SHOW BILL (saves to database) ----------
 
-showBillBtnEl.addEventListener("click", () => {
-    // Basic validation: don't show a bill with no items
+showBillBtnEl.addEventListener("click", async () => {
+    if (billState.finalized) {
+        receiptOverlayEl.style.display = "flex";
+        return;
+    }
+
     if (billState.items.length === 0) {
         alert("Please add at least one item before showing the bill.");
         return;
     }
-    renderReceipt();
-    receiptOverlayEl.style.display = "flex";
+
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+    const payload = {
+        customer_name: document.getElementById("customerName").value || null,
+        customer_phone: document.getElementById("customerPhone").value || null,
+        discount: parseFloat(discountInputEl.value) || 0,
+        cash_received: parseFloat(cashInputEl.value) || 0,
+        payment_method: paymentMethod,
+        items: billState.items.map((item) => ({
+            name: item.name,
+            price: item.unit_price,
+            quantity: item.quantity,
+            product_id: item.product_id,
+            unit_id: item.unit_id,
+        })),
+    };
+
+    showBillBtnEl.disabled = true;
+    showBillBtnEl.textContent = "Saving...";
+
+    try {
+        const response = await fetch("/billing/checkout", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Something went wrong while saving the bill.");
+            showBillBtnEl.disabled = false;
+            showBillBtnEl.textContent = "SHOW BILL";
+            return;
+        }
+
+        billState.finalized = true;
+        billNumberEl.textContent = data.bill_number;
+        billDateEl.textContent = data.date;
+
+        renderReceipt(data);
+        receiptOverlayEl.style.display = "flex";
+        showBillBtnEl.textContent = "VIEW BILL";
+        showBillBtnEl.disabled = false;
+
+    } catch (error) {
+        alert("Could not connect to the server. Please check your connection and try again.");
+        showBillBtnEl.disabled = false;
+        showBillBtnEl.textContent = "SHOW BILL";
+    }
 });
 
 closeReceiptBtnEl.addEventListener("click", () => {
@@ -280,64 +318,71 @@ printReceiptBtnEl.addEventListener("click", () => {
     window.print();
 });
 
-/**
- * Builds the printable receipt HTML from the current bill state.
- */
-function renderReceipt() {
-    const subtotal = billState.items.reduce((sum, item) => sum + item.price, 0);
-    const discount = parseFloat(discountInputEl.value) || 0;
-    const grandTotal = Math.max(subtotal - discount, 0);
-    const cash = parseFloat(cashInputEl.value) || 0;
-    const change = Math.max(cash - grandTotal, 0);
-
-    const itemsHtml = billState.items.map((item) => `
+function renderReceipt(sale) {
+    const itemsHtml = sale.items.map((item) => `
         <div class="receipt-item-row">
             <span>${item.name}</span>
-            <span>${formatCurrency(item.price)}</span>
+            <span>${formatCurrency(item.line_total)}</span>
         </div>
     `).join("");
 
     receiptContentEl.innerHTML = `
         <div class="receipt-shop-name">${shopNameEl.textContent}</div>
         <div class="receipt-meta">
-            Bill No: ${billNumberEl.textContent}<br>
-            Date: ${getTodayDateString()}
+            Bill No: ${sale.bill_number}<br>
+            Date: ${sale.date}
         </div>
 
         <hr class="receipt-divider">
-
         ${itemsHtml}
-
         <hr class="receipt-divider">
 
         <div class="receipt-total-row">
-            <span>Subtotal</span>
-            <span>${formatCurrency(subtotal)}</span>
+            <span>Subtotal</span><span>${formatCurrency(sale.subtotal)}</span>
         </div>
         <div class="receipt-total-row">
-            <span>Discount</span>
-            <span>${formatCurrency(discount)}</span>
+            <span>Discount</span><span>${formatCurrency(sale.discount)}</span>
         </div>
         <div class="receipt-total-row receipt-total-row--grand">
-            <span>TOTAL</span>
-            <span>${formatCurrency(grandTotal)}</span>
+            <span>TOTAL</span><span>${formatCurrency(sale.total)}</span>
         </div>
         <div class="receipt-total-row">
-            <span>Cash</span>
-            <span>${formatCurrency(cash)}</span>
+            <span>Cash</span><span>${formatCurrency(sale.cash_received)}</span>
         </div>
         <div class="receipt-total-row">
-            <span>Change</span>
-            <span>${formatCurrency(change)}</span>
+            <span>Change</span><span>${formatCurrency(sale.change_amount)}</span>
         </div>
 
         <div class="receipt-qr-section">
             <div class="receipt-qr-placeholder"></div>
-            <div class="receipt-qr-label">Scan to pay ${formatCurrency(grandTotal)} (demo)</div>
+            <div class="receipt-qr-label">Scan to pay ${formatCurrency(sale.total)} (demo)</div>
         </div>
 
-        <div class="receipt-footer">
-            THANK YOU<br>VISIT AGAIN
-        </div>
+        <div class="receipt-footer">${shopFooterText}</div>
     `;
 }
+
+// ---------- NEW BILL (reset everything) ----------
+
+newBillBtnEl.addEventListener("click", () => {
+    billState.items = [];
+    billState.currentInput = "";
+    billState.mode = "normal";
+    billState.finalized = false;
+
+    document.getElementById("customerName").value = "";
+    document.getElementById("customerPhone").value = "";
+    discountInputEl.value = 0;
+    cashInputEl.value = 0;
+    document.querySelector('input[name="paymentMethod"][value="cash"]').checked = true;
+
+    billNumberEl.textContent = "New";
+    billDateEl.textContent = getTodayDateString();
+
+    showBillBtnEl.textContent = "SHOW BILL";
+    showBillBtnEl.disabled = false;
+
+    exitProductMode();
+    renderDisplay();
+    renderBill();
+});

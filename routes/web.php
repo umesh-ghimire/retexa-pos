@@ -5,14 +5,14 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\BillingController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/billing', function () {
-    return view('billing.index');
-});
+Route::get('/billing', [BillingController::class, 'index']);
+Route::post('/billing/checkout', [BillingController::class, 'store']);
 
 Route::get('/inventory', function () {
     return view('inventory.index');

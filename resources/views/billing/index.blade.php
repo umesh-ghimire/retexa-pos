@@ -39,7 +39,6 @@
             <button class="calc-btn calc-btn--enter" data-action="enter">ENTER</button>
         </div>
 
-        {{-- Product search box - hidden until PRODUCT is pressed --}}
         <div class="product-search-box" id="productSearchBox" style="display:none;">
             <input type="text" id="productSearchInput" placeholder="Type product name...">
             <div class="product-suggestions" id="productSuggestions"></div>
@@ -51,8 +50,8 @@
     <div class="bill-panel">
 
         <div class="bill-header">
-            <h2 id="shopName">ABC STORE</h2>
-            <p>Bill No: <span id="billNumber">000001</span></p>
+            <h2 id="shopName">{{ $shopName }}</h2>
+            <p>Bill No: <span id="billNumber">New</span></p>
             <p>Date: <span id="billDate"></span></p>
         </div>
 
@@ -62,7 +61,6 @@
         </div>
 
         <div class="bill-items" id="billItems">
-            {{-- Bill items will be added here by JavaScript --}}
             <p class="empty-bill-message" id="emptyBillMessage">No items yet. Enter an amount and press ENTER.</p>
         </div>
 
@@ -87,32 +85,40 @@
                 <span>Change</span>
                 <span id="changeValue">Rs. 0</span>
             </div>
+            <div class="total-row payment-method-row">
+                <span>Payment Method</span>
+                <span>
+                    <label><input type="radio" name="paymentMethod" value="cash" checked> Cash</label>
+                    <label><input type="radio" name="paymentMethod" value="qr"> QR</label>
+                </span>
+            </div>
         </div>
 
-        <button class="btn-show-bill" id="showBillBtn">SHOW BILL</button>
+        <div class="bill-action-buttons">
+            <button class="btn-new-bill" id="newBillBtn">New Bill</button>
+            <button class="btn-show-bill" id="showBillBtn">SHOW BILL</button>
+        </div>
 
     </div>
 
 </div>
 
-{{-- RECEIPT MODAL — hidden until SHOW BILL is clicked --}}
 <div class="receipt-overlay" id="receiptOverlay" style="display:none;">
     <div class="receipt-box" id="receiptBox">
-
-        <div class="receipt-content" id="receiptContent">
-            {{-- Filled dynamically by JavaScript --}}
-        </div>
-
+        <div class="receipt-content" id="receiptContent"></div>
         <div class="receipt-actions">
             <button class="btn-close-receipt" id="closeReceiptBtn">Close</button>
             <button class="btn-print-receipt" id="printReceiptBtn">Print</button>
         </div>
-
     </div>
 </div>
+
 @endsection
 
 @section('scripts')
-    <script src="{{ asset('js/data/dummy-products.js') }}"></script>
+    <script>
+        const realProducts = @json($products);
+        const shopFooterText = @json($footerText);
+    </script>
     <script src="{{ asset('js/billing.js') }}"></script>
 @endsection
