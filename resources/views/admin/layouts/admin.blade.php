@@ -33,9 +33,11 @@
     </div>
 
     <script src="{{ asset('admin-assets/js/app.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
     <script src="{{ asset('admin-assets/js/scripts.js') }}"></script>
     <script src="{{ asset('admin-assets/js/custom.js') }}"></script>
 
+@yield('scripts')
     @yield('scripts')
 </body>
 </html>

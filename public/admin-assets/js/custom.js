@@ -1,7 +1,12 @@
-// Initialize Feather Icons (used throughout the Otika admin sidebar/navbar)
-if (typeof feather !== "undefined") {
-    feather.replace();
-}
+// Fix: move all Bootstrap modals to be direct children of <body>.
+// This is required because Otika's sidebar wrapper uses CSS "transform"
+// for its collapse animation, which breaks position:fixed modals nested
+// inside it (causing clicks/typing to be silently swallowed).
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".modal").forEach(function (modal) {
+        document.body.appendChild(modal);
+    });
+});
 
 /**
  *

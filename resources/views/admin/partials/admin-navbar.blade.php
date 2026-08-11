@@ -18,7 +18,12 @@
                 <div class="dropdown-title">Shop Admin</div>
                 <a href="#" class="dropdown-item has-icon"><i class="fas fa-cog"></i> Settings</a>
                 <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item has-icon text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <form method="POST" action="{{ url('/admin/logout') }}">
+                   @csrf
+                   <button type="submit" class="dropdown-item has-icon text-danger" style="background:none; border:none; width:100%; text-align:left;">
+                       <i class="fas fa-sign-out-alt"></i> Logout
+                   </button>
+                </form>
             </div>
         </li>
     </ul>
