@@ -7,8 +7,8 @@
  * Example: formatCurrency(450) -> "Rs. 450"
  */
 function formatCurrency(amount) {
-    const safeAmount = isNaN(amount) ? 0 : amount;
-    return "Rs. " + safeAmount.toLocaleString("en-IN");
+    const safeAmount = isNaN(amount) ? 0 : parseFloat(amount);
+    return "Rs. " + Math.round(safeAmount).toLocaleString("en-IN");
 }
 
 /**

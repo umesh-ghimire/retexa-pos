@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BillTemplate extends Model
 {
+    /**
+     * The standard section order, used whenever a template
+     * hasn't had a custom order saved yet.
+     */
+    public const DEFAULT_SECTION_ORDER = [
+        'header', 'bill_info', 'customer_info', 'items', 'totals', 'payment', 'qr', 'footer',
+    ];
     protected $fillable = [
         'created_by',
         'name',
@@ -16,6 +23,8 @@ class BillTemplate extends Model
         'font_size',
         'alignment',
         'show_logo',
+        'logo_path',
+        'section_order',
         'shop_name',
         'address',
         'phone',
@@ -37,6 +46,7 @@ class BillTemplate extends Model
 
     protected $casts = [
         'is_default' => 'boolean',
+        'section_order' => 'array',
         'show_logo' => 'boolean',
         'show_customer' => 'boolean',
         'show_bill_number' => 'boolean',
@@ -66,5 +76,16 @@ class BillTemplate extends Model
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
+    }
+
+    /**
+     * Get this template's section order, falling back to the
+     * standard order if none has been customized yet.
+     */
+    public function getSectionOrderOrDefault(): array
+    {
+        return $this->section_order && count($this->section_order) > 0
+            ? $this->section_order
+            : self::DEFAULT_SECTION_ORDER;
     }
 }

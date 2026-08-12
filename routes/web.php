@@ -2,9 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\BillTemplateController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\BillingController;
 
 Route::get('/', function () {
@@ -54,6 +56,15 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         
     Route::get('/inventory', [InventoryController::class, 'index'])->name('admin.inventory.index');
     Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust'])->name('admin.inventory.adjust');    
+    Route::get('/bills', [SaleController::class, 'index'])->name('admin.bills.index');
+
+    Route::get('/bill-templates', [BillTemplateController::class, 'index'])->name('admin.bill-templates.index');
+    Route::post('/bill-templates/{billTemplate}/set-default', [BillTemplateController::class, 'setDefault'])->name('admin.bill-templates.setDefault');
+    Route::delete('/bill-templates/{billTemplate}', [BillTemplateController::class, 'destroy'])->name('admin.bill-templates.destroy');
+
+    Route::post('/bill-templates', [BillTemplateController::class, 'store'])->name('admin.bill-templates.store');
+    Route::put('/bill-templates/{billTemplate}', [BillTemplateController::class, 'update'])->name('admin.bill-templates.update');
+    Route::post('/bill-templates/{billTemplate}/duplicate', [BillTemplateController::class, 'duplicate'])->name('admin.bill-templates.duplicate');
 });
 
 

@@ -476,3 +476,336 @@
 .product-suggestion-item .suggestion-add-btn:hover {
     background: var(--color-primary-dark);
 }
+
+/* ---------- BILL TEMPLATE PREVIEW (adapts to paper width) ---------- */
+
+.receipt-content.paper-58mm {
+    width: 220px;
+}
+
+.receipt-content.paper-80mm {
+    width: 300px;
+}
+
+.receipt-content.font-small {
+    font-size: 0.72rem;
+}
+
+.receipt-content.font-medium {
+    font-size: 0.85rem;
+}
+
+.receipt-content.font-large {
+    font-size: 1rem;
+}
+
+.receipt-content.align-left {
+    text-align: left;
+}
+
+.receipt-content.align-center {
+    text-align: center;
+}
+
+.receipt-content.align-right {
+    text-align: right;
+}
+
+.receipt-content .receipt-logo {
+    display: block;
+    max-width: 80px;
+    max-height: 80px;
+    margin: 0 auto 8px auto;
+    object-fit: contain;
+}
+
+.receipt-sample-data-note {
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.7rem;
+    text-align: center;
+    padding: 4px 6px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+/* ---------- BILL DESIGNER (Step 14.10) ---------- */
+
+.modal-designer-dialog {
+    max-width: 95vw;
+    width: 95vw;
+    margin: 2.5vh auto;
+}
+
+.designer-content {
+    height: 95vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.designer-content form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.designer-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.designer-name-input {
+    border: none;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-text);
+    max-width: 320px;
+    padding: 4px 8px;
+}
+
+.designer-name-input:focus {
+    outline: 1px solid var(--color-primary);
+    border-radius: 4px;
+}
+
+.designer-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.designer-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+.designer-col {
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.designer-col-title {
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.designer-col-hint {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-bottom: 12px;
+}
+
+.designer-col-left {
+    width: 230px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--color-border);
+}
+
+.designer-col-center {
+    flex: 1;
+    background: #e9ecef;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.designer-col-right {
+    width: 360px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--color-border);
+}
+
+.designer-toggle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 8px;
+}
+
+.designer-preview-toolbar {
+    display: flex;
+    gap: 16px;
+    align-self: stretch;
+    background: #ffffff;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.designer-toolbar-group label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    margin-bottom: 2px;
+}
+
+.designer-toolbar-group select {
+    width: 110px;
+}
+
+.designer-preview-frame {
+    padding: 24px;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.designer-section-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.designer-section-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f4f6f8;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+}
+
+.designer-section-item .section-number {
+    background: var(--color-primary);
+    color: #fff;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* ---------- RECEIPT VISUAL POLISH (reference-style) ---------- */
+
+.receipt-content .receipt-logo-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #111827;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px auto;
+    overflow: hidden;
+}
+
+.receipt-content .receipt-logo-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.receipt-content .receipt-logo-circle svg {
+    width: 28px;
+    height: 28px;
+    fill: #ffffff;
+}
+
+.receipt-content .receipt-shop-name {
+    font-size: 1.3em;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.receipt-content .receipt-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 1px 0;
+}
+
+.receipt-content .receipt-meta-row .meta-label {
+    white-space: nowrap;
+}
+
+.receipt-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2px 0;
+}
+
+.receipt-items-table th {
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.85em;
+    border-bottom: 1.5px solid #111827;
+    padding: 3px 2px;
+}
+
+.receipt-items-table th:last-child,
+.receipt-items-table td:last-child {
+    text-align: right;
+}
+
+.receipt-items-table td {
+    padding: 3px 2px;
+    vertical-align: top;
+}
+
+.receipt-content .receipt-footer .footer-smiley {
+    display: block;
+    font-size: 1.1em;
+    margin-top: 2px;
+}
+
+.receipt-torn-edge {
+    height: 10px;
+    margin-top: 8px;
+    background-image:
+        linear-gradient(135deg, transparent 50%, #e9ecef 50%),
+        linear-gradient(-135deg, transparent 50%, #e9ecef 50%);
+    background-size: 12px 12px;
+    background-position: bottom;
+    background-repeat: repeat-x;
+}
+
+/* ---------- BILL DESIGNER: visible paper boundary (Step 14.10 fix) ---------- */
+
+.receipt-content.designer-paper {
+    background: #ffffff;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+    padding: 20px 14px;
+    box-sizing: border-box;
+    min-height: 200px;
+}
+
+/* ---------- SECTION DRAG-TO-REORDER (Step 14.11) ---------- */
+
+.designer-section-item {
+    cursor: grab;
+    position: relative;
+}
+
+.designer-section-item .drag-handle {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.designer-section-item.dragging {
+    opacity: 0.4;
+}
+
+.designer-section-item.drop-before {
+    border-top: 3px solid var(--color-primary);
+}
+
+.designer-section-item.drop-after {
+    border-bottom: 3px solid var(--color-primary);
+}

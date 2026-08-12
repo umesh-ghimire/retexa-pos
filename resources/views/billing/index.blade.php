@@ -118,7 +118,8 @@
 @section('scripts')
     <script>
         const realProducts = @json($products);
-        const shopFooterText = @json($footerText);
+        const activeTemplate = @json($template);
     </script>
+    <script src="{{ asset('js/receipt-renderer.js') }}"></script>
     <script src="{{ asset('js/billing.js') }}"></script>
 @endsection

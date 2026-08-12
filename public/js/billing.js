@@ -319,47 +319,11 @@ printReceiptBtnEl.addEventListener("click", () => {
 });
 
 function renderReceipt(sale) {
-    const itemsHtml = sale.items.map((item) => `
-        <div class="receipt-item-row">
-            <span>${item.name}</span>
-            <span>${formatCurrency(item.line_total)}</span>
-        </div>
-    `).join("");
+    const tpl = activeTemplate || buildFallbackTemplate(shopNameEl.textContent);
+    const order = getSectionOrder(tpl);
 
-    receiptContentEl.innerHTML = `
-        <div class="receipt-shop-name">${shopNameEl.textContent}</div>
-        <div class="receipt-meta">
-            Bill No: ${sale.bill_number}<br>
-            Date: ${sale.date}
-        </div>
-
-        <hr class="receipt-divider">
-        ${itemsHtml}
-        <hr class="receipt-divider">
-
-        <div class="receipt-total-row">
-            <span>Subtotal</span><span>${formatCurrency(sale.subtotal)}</span>
-        </div>
-        <div class="receipt-total-row">
-            <span>Discount</span><span>${formatCurrency(sale.discount)}</span>
-        </div>
-        <div class="receipt-total-row receipt-total-row--grand">
-            <span>TOTAL</span><span>${formatCurrency(sale.total)}</span>
-        </div>
-        <div class="receipt-total-row">
-            <span>Cash</span><span>${formatCurrency(sale.cash_received)}</span>
-        </div>
-        <div class="receipt-total-row">
-            <span>Change</span><span>${formatCurrency(sale.change_amount)}</span>
-        </div>
-
-        <div class="receipt-qr-section">
-            <div class="receipt-qr-placeholder"></div>
-            <div class="receipt-qr-label">Scan to pay ${formatCurrency(sale.total)} (demo)</div>
-        </div>
-
-        <div class="receipt-footer">${shopFooterText}</div>
-    `;
+    applyReceiptContainerClasses(receiptContentEl, tpl);
+    receiptContentEl.innerHTML = buildReceiptHtml(tpl, sale, order);
 }
 
 // ---------- NEW BILL (reset everything) ----------

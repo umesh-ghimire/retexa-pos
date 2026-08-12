@@ -38,7 +38,7 @@ class BillingController extends Controller
         return view('billing.index', [
             'products' => $products,
             'shopName' => $template->shop_name ?? 'My Shop',
-            'footerText' => $template->footer_text ?? 'THANK YOU / VISIT AGAIN',
+            'template' => $template,
         ]);
     }
 
@@ -78,11 +78,14 @@ class BillingController extends Controller
                     $customerId = Customer::create(['name' => $validated['customer_name']])->id;
                 }
 
+                $activeTemplate = BillTemplate::where('is_default', true)->first();
+
                 // Create the sale with a temporary bill number (fixed right after)
                 $sale = Sale::create([
                     'bill_number' => 'TEMP-' . uniqid(),
                     'customer_id' => $customerId,
                     'created_by' => Auth::id(),
+                    'bill_template_id' => $activeTemplate->id ?? null,
                     'subtotal' => 0,
                     'discount' => 0,
                     'total' => 0,
@@ -146,11 +149,13 @@ class BillingController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        $sale->load('items');
+        $sale->load(['items.product', 'items.unit', 'customer']);
 
         return response()->json([
             'bill_number' => $sale->bill_number,
             'date' => $sale->created_at->format('Y-m-d'),
+            'created_at' => $sale->created_at->toIso8601String(),
+            'customer_name' => $sale->customer->name ?? null,
             'subtotal' => (float) $sale->subtotal,
             'discount' => (float) $sale->discount,
             'total' => (float) $sale->total,
@@ -161,6 +166,8 @@ class BillingController extends Controller
                 'quantity' => (float) $item->quantity,
                 'unit_price' => (float) $item->unit_price,
                 'line_total' => (float) $item->line_total,
+                'sku' => $item->product->sku ?? null,
+                'unit' => $item->unit->short_code ?? null,
             ]),
         ]);
     }

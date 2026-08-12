@@ -63,6 +63,12 @@
                 </a>
             </li>
 
+            <li class="dropdown {{ request()->is('admin/bill-templates*') ? 'active' : '' }}">
+                <a href="{{ url('/admin/bill-templates') }}" class="nav-link">
+                    <i data-feather="file"></i><span>Bill Designs</span>
+                </a>
+            </li>
+
             <li class="dropdown {{ request()->is('admin/settings*') ? 'active' : '' }}">
                 <a href="{{ url('/admin/settings') }}" class="nav-link">
                     <i data-feather="settings"></i><span>Settings</span>
