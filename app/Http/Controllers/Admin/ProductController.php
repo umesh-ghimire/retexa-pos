@@ -75,6 +75,16 @@ class ProductController extends Controller
     }
 
     /**
+     * Generate an internal barcode for a product that doesn't have one yet.
+     */
+    public function generateBarcode(Product $product)
+    {
+        $barcode = $product->generateBarcode();
+
+        return back()->with('success', "Barcode {$barcode} assigned to \"{$product->name}\".");
+    }
+
+    /**
      * Shared validation rules for store() and update().
      */
     private function validateProduct(Request $request, ?int $productId = null): array

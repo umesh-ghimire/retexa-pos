@@ -62,6 +62,8 @@ Route::prefix('admin')->middleware(['auth', 'owner'])->group(function () {
         ->except(['show', 'create', 'edit'])
         ->names('admin.products');  
 
+    Route::post('/products/{product}/generate-barcode', [ProductController::class, 'generateBarcode'])->name('admin.products.generateBarcode');    
+
     Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
     Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');    

@@ -25,6 +25,7 @@
                                 <th>Image</th>
                                 <th>Name</th>
                                 <th>SKU</th>
+                                <th>Barcode</th>
                                 <th>Category</th>
                                 <th>Unit</th>
                                 <th>Price</th>
@@ -47,6 +48,19 @@
                                     </td>
                                     <td>{{ $product->name }}</td>
                                     <td>{{ $product->sku ?? '—' }}</td>
+                                    <td>
+                                        @if ($product->barcode)
+                                            {{ $product->barcode }}
+                                            @if ($product->hasInternalBarcode())
+                                                <br><span class="badge badge-secondary" style="font-size:0.7rem;">Auto-generated</span>
+                                            @endif
+                                        @else
+                                            <form action="{{ route('admin.products.generateBarcode', $product) }}" method="POST" style="display:inline;">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-light">Generate Barcode</button>
+                                            </form>
+                                        @endif
+                                    </td>
                                     <td>{{ $product->category->name ?? 'Uncategorized' }}</td>
                                     <td>{{ $product->unit->short_code ?? '—' }}</td>
                                     <td>Rs. {{ number_format($product->price, 2) }}</td>
