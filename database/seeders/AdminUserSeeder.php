@@ -14,6 +14,7 @@ class AdminUserSeeder extends Seeder
             'name' => 'Shop Admin',
             'email' => 'admin@retexa.test',
             'password' => Hash::make('password123'),
+            'role' => 'owner',
         ]);
     }
 }

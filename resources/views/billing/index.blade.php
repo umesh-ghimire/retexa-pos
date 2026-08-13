@@ -97,6 +97,11 @@
         <div class="bill-action-buttons">
             <button class="btn-new-bill" id="newBillBtn">New Bill</button>
             <button class="btn-show-bill" id="showBillBtn">SHOW BILL</button>
+
+        <form method="POST" action="{{ url('/billing/logout') }}" style="margin-top:8px;">
+            @csrf
+            <button type="submit" class="btn-new-bill" style="width:100%;">Logout</button>
+        </form>
         </div>
 
     </div>

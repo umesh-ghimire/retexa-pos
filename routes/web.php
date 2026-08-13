@@ -8,14 +8,22 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SaleController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\BillingAuthController;
 use App\Http\Controllers\BillingController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/billing', [BillingController::class, 'index']);
-Route::post('/billing/checkout', [BillingController::class, 'store']);
+Route::get('/billing/login', [BillingAuthController::class, 'showLogin']);
+Route::post('/billing/login', [BillingAuthController::class, 'login']);
+Route::post('/billing/logout', [BillingAuthController::class, 'logout']);
+
+Route::middleware('auth')->group(function () {
+    Route::get('/billing', [BillingController::class, 'index']);
+    Route::post('/billing/checkout', [BillingController::class, 'store']);
+});
 
 Route::get('/inventory', function () {
     return view('inventory.index');
@@ -42,7 +50,7 @@ Route::prefix('admin')->group(function () {
 
 // Protected admin routes (must be logged in to access)
 
-Route::prefix('admin')->middleware('auth')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'owner'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::resource('categories', CategoryController::class)
@@ -52,6 +60,10 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::resource('products', ProductController::class)
         ->except(['show', 'create', 'edit'])
         ->names('admin.products');  
+
+    Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');    
         
     Route::get('/inventory', [InventoryController::class, 'index'])->name('admin.inventory.index');
     Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust'])->name('admin.inventory.adjust');    

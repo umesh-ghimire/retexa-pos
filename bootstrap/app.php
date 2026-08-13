@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         
-        $middleware->redirectGuestsTo('/admin/login');
+        $middleware->redirectGuestsTo(function ($request) {
+            return $request->is('billing*') ? '/billing/login' : '/admin/login';
+        });
+        
+        $middleware->alias(['owner' => \App\Http\Middleware\EnsureUserIsOwner::class]);
         
     })
     ->withExceptions(function (Exceptions $exceptions): void {
