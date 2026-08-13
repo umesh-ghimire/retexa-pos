@@ -162,7 +162,7 @@
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Minimum Stock Level</label>
-                            <input type="number" step="0.001" min="0" class="form-control" id="productMinStockInput" name="min_stock_level" value="0">
+                            <input type="number" step="0.001" min="0" class="form-control" id="productMinStockInput" name="min_stock_level" value="{{ $defaultLowStock }}">
                         </div>
                         <div class="col-md-4 form-group">
                             <label>Status</label>

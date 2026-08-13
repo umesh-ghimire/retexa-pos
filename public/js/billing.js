@@ -23,6 +23,7 @@ const billNumberEl = document.getElementById("billNumber");
 const shopNameEl = document.getElementById("shopName");
 
 const productSearchBoxEl = document.getElementById("productSearchBox");
+const barcodeInputEl = document.getElementById("barcodeInput");
 const productSearchInputEl = document.getElementById("productSearchInput");
 const productSuggestionsEl = document.getElementById("productSuggestions");
 
@@ -350,3 +351,60 @@ newBillBtnEl.addEventListener("click", () => {
     renderDisplay();
     renderBill();
 });
+
+// ---------- BARCODE SCANNING ----------
+// Scanners act like a keyboard: they "type" the barcode digits
+// very fast, then send an Enter key automatically.
+
+barcodeInputEl.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter") return;
+
+    const barcode = barcodeInputEl.value.trim();
+    barcodeInputEl.value = "";
+
+    if (!barcode) return;
+
+    try {
+        const response = await fetch("/billing/lookup-barcode", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+            },
+            body: JSON.stringify({ barcode }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Product not found for this barcode.");
+            barcodeInputEl.focus();
+            return;
+        }
+
+        if (data.stock <= 0) {
+            alert(`"${data.name}" is out of stock.`);
+            barcodeInputEl.focus();
+            return;
+        }
+
+        addProductToBill(data, 1);
+        barcodeInputEl.focus();
+
+    } catch (error) {
+        alert("Could not reach the server. Please try scanning again.");
+        barcodeInputEl.focus();
+    }
+});
+
+// Keep the barcode box focused and ready whenever the cashier
+// isn't actively typing somewhere else (e.g. customer name, cash).
+document.addEventListener("click", (event) => {
+    const isTypingElsewhere = event.target.matches("input, textarea, select");
+    if (!isTypingElsewhere) {
+        barcodeInputEl.focus();
+    }
+});
+
+barcodeInputEl.focus();

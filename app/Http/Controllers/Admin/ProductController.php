@@ -19,8 +19,9 @@ class ProductController extends Controller
         $products = Product::with(['category', 'unit'])->latest()->get();
         $categories = Category::where('status', 'active')->orderBy('name')->get();
         $units = Unit::where('status', 'active')->orderBy('name')->get();
+        $defaultLowStock = \App\Models\Setting::get('low_stock_threshold', 5);
 
-        return view('admin.products.index', compact('products', 'categories', 'units'));
+        return view('admin.products.index', compact('products', 'categories', 'units', 'defaultLowStock'));
     }
 
     /**

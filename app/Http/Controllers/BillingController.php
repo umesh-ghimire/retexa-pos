@@ -39,6 +39,7 @@ class BillingController extends Controller
             'products' => $products,
             'shopName' => $template->shop_name ?? 'My Shop',
             'template' => $template,
+            'defaultDiscount' => \App\Models\Setting::get('default_discount', 0),
         ]);
     }
 
@@ -169,6 +170,35 @@ class BillingController extends Controller
                 'sku' => $item->product->sku ?? null,
                 'unit' => $item->unit->short_code ?? null,
             ]),
+        ]);
+    }
+
+    /**
+     * Look up a single product by its exact barcode, for the
+     * barcode scanner input on the billing screen.
+     */
+    public function lookupBarcode(Request $request)
+    {
+        $validated = $request->validate([
+            'barcode' => ['required', 'string'],
+        ]);
+
+        $product = Product::with('unit')
+            ->where('barcode', $validated['barcode'])
+            ->where('status', 'active')
+            ->first();
+
+        if (! $product) {
+            return response()->json(['message' => 'No product found with this barcode.'], 404);
+        }
+
+        return response()->json([
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => (float) $product->price,
+            'stock' => (float) $product->stock,
+            'unit_id' => $product->unit_id,
+            'unit' => $product->unit->short_code ?? null,
         ]);
     }
 }

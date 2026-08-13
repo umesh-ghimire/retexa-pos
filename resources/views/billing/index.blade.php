@@ -44,6 +44,13 @@
             <div class="product-suggestions" id="productSuggestions"></div>
         </div>
 
+        <div class="barcode-scan-box">
+            <label for="barcodeInput" style="font-size:0.8rem; color:var(--color-text-muted); display:block; margin-bottom:4px;">
+                Scan Barcode
+            </label>
+            <input type="text" id="barcodeInput" placeholder="Ready to scan..." autocomplete="off">
+        </div>
+
     </div>
 
     {{-- RIGHT SIDE: Bill panel --}}
@@ -71,7 +78,7 @@
             </div>
             <div class="total-row">
                 <span>Discount</span>
-                <input type="number" id="discountInput" value="0" min="0">
+                <input type="number" id="discountInput" value="{{ $defaultDiscount ?: 0 }}" min="0">
             </div>
             <div class="total-row total-row--grand">
                 <span>TOTAL</span>

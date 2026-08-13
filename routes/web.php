@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SaleController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\BillingAuthController;
 use App\Http\Controllers\BillingController;
@@ -24,6 +25,7 @@ Route::post('/billing/logout', [BillingAuthController::class, 'logout']);
 Route::middleware('auth')->group(function () {
     Route::get('/billing', [BillingController::class, 'index']);
     Route::post('/billing/checkout', [BillingController::class, 'store']);
+    Route::post('/billing/lookup-barcode', [BillingController::class, 'lookupBarcode']);
 });
 
 Route::get('/inventory', function () {
@@ -38,9 +40,7 @@ Route::get('/dashboard', function () {
     return view('dashboard.index');
 });
 
-Route::get('/settings', function () {
-    return view('settings.index');
-});
+
 
 // Admin login routes (NOT protected - this is how you log in)
 Route::prefix('admin')->group(function () {
@@ -81,6 +81,9 @@ Route::prefix('admin')->middleware(['auth', 'owner'])->group(function () {
     Route::get('/customers', [CustomerController::class, 'index'])->name('admin.customers.index');
     Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('admin.customers.update');
     Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('admin.customers.destroy');
+
+    Route::get('/settings', [SettingController::class, 'index'])->name('admin.settings.index');
+    Route::put('/settings', [SettingController::class, 'update'])->name('admin.settings.update');
 });
 
 
