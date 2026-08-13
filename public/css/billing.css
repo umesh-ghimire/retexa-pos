@@ -392,8 +392,14 @@
 }
 
 /* ---------- PRINT-ONLY STYLES ---------- */
-/* When printing, hide everything except the receipt content */
+/* When printing, hide everything except the receipt content,
+   and size the paper itself to match real thermal paper widths. */
 @media print {
+    @page {
+        size: 72mm 200mm;
+        margin: 0;
+    }
+
     body * {
         visibility: hidden;
     }
@@ -404,7 +410,42 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
+        width: 72mm !important;
+        max-width: 72mm !important;
+        box-sizing: border-box;
+        padding: 2mm 3mm;
+        box-shadow: none !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: 21px;
+        font-weight: 800;
+        line-height: 1.45;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .receipt-content .receipt-shop-name {
+        font-size: 1.25em;
+    }
+
+    .receipt-content .receipt-total-row--grand {
+        font-size: 1.2em !important;
+    }
+
+    .receipt-content .receipt-qr-label {
+        font-size: 0.85em !important;
+    }
+
+    .receipt-content .receipt-items-table th {
+        font-size: 0.9em;
+    }
+
+    .receipt-content * {
+        color: #000000 !important;
+    }
+
+    .receipt-content .receipt-torn-edge {
+        display: none;
     }
     .receipt-overlay, .receipt-box {
         position: static;
