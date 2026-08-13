@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BillTemplateController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
@@ -76,6 +77,10 @@ Route::prefix('admin')->middleware(['auth', 'owner'])->group(function () {
     Route::post('/bill-templates', [BillTemplateController::class, 'store'])->name('admin.bill-templates.store');
     Route::put('/bill-templates/{billTemplate}', [BillTemplateController::class, 'update'])->name('admin.bill-templates.update');
     Route::post('/bill-templates/{billTemplate}/duplicate', [BillTemplateController::class, 'duplicate'])->name('admin.bill-templates.duplicate');
+
+    Route::get('/customers', [CustomerController::class, 'index'])->name('admin.customers.index');
+    Route::put('/customers/{customer}', [CustomerController::class, 'update'])->name('admin.customers.update');
+    Route::delete('/customers/{customer}', [CustomerController::class, 'destroy'])->name('admin.customers.destroy');
 });
 
 
