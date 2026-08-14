@@ -14,6 +14,7 @@ class SettingController extends Controller
         'shop_phone',
         'default_discount',
         'low_stock_threshold',
+        'payment_qr_path',
     ];
 
     public function index()
@@ -34,10 +35,22 @@ class SettingController extends Controller
             'shop_phone' => ['nullable', 'string', 'max:50'],
             'default_discount' => ['nullable', 'numeric', 'min:0'],
             'low_stock_threshold' => ['nullable', 'numeric', 'min:0'],
+            'payment_qr' => ['nullable', 'image', 'max:2048'],
         ]);
+
+        unset($validated['payment_qr']);
 
         foreach ($validated as $key => $value) {
             Setting::set($key, $value);
+        }
+
+        if ($request->hasFile('payment_qr')) {
+            $oldPath = Setting::get('payment_qr_path');
+            if ($oldPath) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+            }
+            $newPath = $request->file('payment_qr')->store('payment-qr', 'public');
+            Setting::set('payment_qr_path', $newPath);
         }
 
         return back()->with('success', 'Settings saved successfully.');

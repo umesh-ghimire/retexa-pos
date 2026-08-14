@@ -109,11 +109,22 @@
     margin-bottom: var(--space-sm);
 }
 
+.product-search-box {
+    position: relative;
+}
+
 .product-suggestions {
-    max-height: 220px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    max-height: 260px;
     overflow-y: auto;
+    background: #ffffff;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 
 .product-suggestion-item {
@@ -851,13 +862,27 @@
     border-bottom: 3px solid var(--color-primary);
 }
 
-.barcode-scan-box {
+.product-search-box {
+    position: relative;
     margin-top: var(--space-md);
     padding-top: var(--space-md);
     border-top: 1px solid var(--color-border);
 }
 
-.barcode-scan-box input {
+.product-search-box label,
+.product-search-box input {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+}
+
+.product-search-box.search-visible label,
+.product-search-box.search-visible input {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.product-search-box input {
     width: 100%;
     padding: 10px 12px;
     border: 2px solid var(--color-accent);
@@ -865,7 +890,110 @@
     font-size: 1rem;
 }
 
-.barcode-scan-box input:focus {
+.product-search-box input:focus {
     outline: none;
     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.product-suggestion-item .suggestion-stock {
+    font-size: 0.75rem;
+    display: block;
+    margin-top: 2px;
+}
+
+.product-suggestion-item .suggestion-stock--ok {
+    color: var(--color-accent);
+}
+
+.product-suggestion-item .suggestion-stock--out {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+.barcode-not-found-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(31, 41, 55, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: var(--space-lg);
+}
+
+.barcode-not-found-box {
+    background: #ffffff;
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 340px;
+    padding: var(--space-lg);
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.barcode-not-found-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-danger);
+    margin-bottom: 4px;
+}
+
+.barcode-not-found-code {
+    color: var(--color-text-muted);
+    font-family: 'Courier New', monospace;
+    margin-bottom: var(--space-md);
+}
+
+.barcode-not-found-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.barcode-not-found-actions a,
+.barcode-not-found-actions button {
+    display: block;
+    width: 100%;
+    padding: 10px 0;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+}
+
+.btn-create-product {
+    background: var(--color-primary);
+    color: #ffffff !important;
+}
+
+.btn-create-product:hover {
+    background: var(--color-primary-dark);
+}
+
+.btn-search-instead {
+    background: var(--color-accent);
+    color: #ffffff;
+}
+
+.btn-search-instead:hover {
+    background: #0b7c72;
+}
+
+.btn-cancel-barcode {
+    background: #eef1f5;
+    color: var(--color-text);
+}
+
+.btn-cancel-barcode:hover {
+    background: #dde3ea;
+}
+
+.receipt-qr-image {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    margin-bottom: 4px;
 }

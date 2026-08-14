@@ -12,8 +12,7 @@
         @if ($errors->any())
             <div class="alert alert-danger">{{ $errors->first() }}</div>
         @endif
-
-        <form method="POST" action="{{ route('admin.settings.update') }}">
+<form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data"><form method="POST" action="{{ route('admin.settings.update') }}">
             @csrf
             @method('PUT')
 
@@ -57,6 +56,24 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4>Digital Wallet QR</h4>
+                </div>
+                <div class="card-body">
+                    @if ($settings['payment_qr_path'])
+                        <img src="{{ asset('storage/' . $settings['payment_qr_path']) }}" style="width:120px; height:120px; object-fit:contain; border:1px solid var(--color-border); border-radius:4px; padding:6px; margin-bottom:10px; display:block;">
+                    @endif
+                    <div class="form-group">
+                        <label>Upload QR Image</label>
+                        <input type="file" class="form-control-file" name="payment_qr" accept="image/*">
+                        <small class="text-muted">This replaces the demo QR on all printed receipts.</small>
+                    </div>
+                </div>
+            </div>
+
+
 
             <button type="submit" class="btn btn-primary">Save Settings</button>
 

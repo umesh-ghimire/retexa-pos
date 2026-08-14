@@ -77,3 +77,34 @@ input[type="number"]:focus {
     border-bottom-color: var(--color-primary);
 }
 
+
+.app-nav__left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+}
+
+.app-nav__user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.app-nav__username {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-weight: 600;
+}
+
+.app-nav__logout-btn {
+    background: #fde2e2;
+    color: var(--color-danger);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.app-nav__logout-btn:hover {
+    background: #fbc9c9;
+}

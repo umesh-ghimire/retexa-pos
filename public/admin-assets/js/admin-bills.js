@@ -1,5 +1,5 @@
 function openBillModal(sale, tpl) {
-    const template = tpl || buildFallbackTemplate('Shop');
+    const template = resolveEffectiveTemplate(tpl, sale, 'Shop');
     const order = getSectionOrder(template);
 
     const container = document.getElementById('billModalContent');

@@ -3,7 +3,7 @@
    ============================================ */
 
 const billState = {
-    items: [],          // { name, unit_price, quantity, line_total, product_id, unit_id, unit_label }
+    items: [],
     mode: "normal",
     currentInput: "",
     finalized: false,
@@ -22,10 +22,10 @@ const billDateEl = document.getElementById("billDate");
 const billNumberEl = document.getElementById("billNumber");
 const shopNameEl = document.getElementById("shopName");
 
-const productSearchBoxEl = document.getElementById("productSearchBox");
-const barcodeInputEl = document.getElementById("barcodeInput");
-const productSearchInputEl = document.getElementById("productSearchInput");
+const productScanInputEl = document.getElementById("productScanInput");
 const productSuggestionsEl = document.getElementById("productSuggestions");
+const productSearchBoxEl = document.getElementById("productSearchBox");
+const productSearchCloseBtnEl = document.getElementById("productSearchCloseBtn");
 
 const receiptOverlayEl = document.getElementById("receiptOverlay");
 const receiptContentEl = document.getElementById("receiptContent");
@@ -34,13 +34,21 @@ const newBillBtnEl = document.getElementById("newBillBtn");
 const closeReceiptBtnEl = document.getElementById("closeReceiptBtn");
 const printReceiptBtnEl = document.getElementById("printReceiptBtn");
 
+const barcodeNotFoundOverlayEl = document.getElementById("barcodeNotFoundOverlay");
+const barcodeNotFoundCodeEl = document.getElementById("barcodeNotFoundCode");
+const barcodeSearchInsteadBtnEl = document.getElementById("barcodeSearchInsteadBtn");
+const barcodeCancelBtnEl = document.getElementById("barcodeCancelBtn");
+
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+let isSearchMode = false;
+let currentSuggestions = [];
+let highlightedIndex = -1;
+let searchDebounceTimer = null;
 
 billDateEl.textContent = getTodayDateString();
 renderDisplay();
 renderBill();
-
-// ---------- CALCULATOR BUTTONS ----------
 
 document.querySelectorAll(".calc-btn").forEach((button) => {
     button.addEventListener("click", () => {
@@ -69,7 +77,6 @@ function handleNumberKey(key) {
 
 function handleClear() {
     billState.currentInput = "";
-    exitProductMode();
     renderDisplay();
 }
 
@@ -99,84 +106,218 @@ function handleEnter() {
 }
 
 function handleProductMode() {
-    billState.mode = "product";
-    billState.currentInput = "";
-    renderDisplay();
-
-    productSearchBoxEl.style.display = "block";
-    productSearchInputEl.value = "";
-    productSearchInputEl.focus();
-    renderProductSuggestions("");
+    showSearchUI();
 }
 
-function exitProductMode() {
-    billState.mode = "normal";
-    productSearchBoxEl.style.display = "none";
+function showSearchUI() {
+    isSearchMode = true;
+    productSearchBoxEl.classList.add("search-visible");
+    productScanInputEl.value = "";
+    clearSuggestions();
+    productScanInputEl.focus();
+}
+
+function hideSearchUI() {
+    isSearchMode = false;
+    productSearchBoxEl.classList.remove("search-visible");
+    productScanInputEl.value = "";
+    clearSuggestions();
+}
+
+function clearSuggestions() {
+    currentSuggestions = [];
+    highlightedIndex = -1;
     productSuggestionsEl.innerHTML = "";
 }
 
-// ---------- PRODUCT SEARCH (real database products) ----------
+productSearchCloseBtnEl.addEventListener("click", hideSearchUI);
 
-productSearchInputEl.addEventListener("input", () => {
-    renderProductSuggestions(productSearchInputEl.value);
+productScanInputEl.addEventListener("input", () => {
+    if (!isSearchMode) return;
+
+    const query = productScanInputEl.value.trim();
+    clearTimeout(searchDebounceTimer);
+
+    if (query.length < 2) {
+        clearSuggestions();
+        return;
+    }
+
+    searchDebounceTimer = setTimeout(() => fetchProductSuggestions(query), 250);
 });
 
-function renderProductSuggestions(searchText) {
-    const query = searchText.trim().toLowerCase();
+async function fetchProductSuggestions(query) {
+    try {
+        const response = await fetch("/billing/search-products?q=" + encodeURIComponent(query));
+        const products = await response.json();
+        currentSuggestions = products;
+        highlightedIndex = products.length > 0 ? 0 : -1;
+        renderProductSuggestions();
+    } catch (error) {
+        productSuggestionsEl.innerHTML = `<p style="padding:10px; color:#6b7280;">Search failed. Please try again.</p>`;
+    }
+}
 
-    const matches = query === ""
-        ? realProducts
-        : realProducts.filter((p) => p.name.toLowerCase().startsWith(query));
-
+function renderProductSuggestions() {
     productSuggestionsEl.innerHTML = "";
 
-    if (matches.length === 0) {
+    if (currentSuggestions.length === 0) {
         productSuggestionsEl.innerHTML = `<p style="padding:10px; color:#6b7280;">No products found.</p>`;
         return;
     }
 
-    matches.forEach((product) => {
+    currentSuggestions.forEach((product, index) => {
+        const isOut = product.stock <= 0;
+        const stockLabel = isOut
+            ? "Out of stock"
+            : `${trimZeros(product.stock)} ${product.unit || ""} in stock`;
+
         const item = document.createElement("div");
         item.className = "product-suggestion-item";
+        if (index === highlightedIndex) {
+            item.classList.add("product-suggestion-item--highlighted");
+        }
+        item.style.cursor = isOut ? "not-allowed" : "pointer";
+        item.style.opacity = isOut ? "0.6" : "1";
         item.innerHTML = `
-            <span class="suggestion-info">${product.name} — ${formatCurrency(product.price)}${product.unit ? " / " + product.unit : ""}</span>
-            <input type="number" class="suggestion-qty" value="1" min="0.001" step="0.001">
-            <button type="button" class="suggestion-add-btn">Add</button>
+            <span class="suggestion-info">
+                ${product.name} — ${formatCurrency(product.price)}${product.unit ? " / " + product.unit : ""}
+                <span class="suggestion-stock ${isOut ? 'suggestion-stock--out' : 'suggestion-stock--ok'}">${stockLabel}</span>
+            </span>
         `;
-        item.querySelector(".suggestion-add-btn").addEventListener("click", () => {
-            const qtyInput = item.querySelector(".suggestion-qty");
-            const quantity = parseFloat(qtyInput.value);
 
-            if (isNaN(quantity) || quantity <= 0) {
-                alert("Please enter a valid quantity.");
-                return;
-            }
-            if (quantity > product.stock) {
-                alert(`Only ${product.stock} ${product.unit || ""} of "${product.name}" available in stock.`);
-                return;
-            }
-            addProductToBill(product, quantity);
-        });
+        if (!isOut) {
+            item.addEventListener("click", () => selectSuggestion(index));
+        }
+
         productSuggestionsEl.appendChild(item);
     });
 }
 
-function addProductToBill(product, quantity) {
-    billState.items.push({
-        name: product.name,
-        unit_price: product.price,
-        quantity: quantity,
-        line_total: Math.round(product.price * quantity * 100) / 100,
-        product_id: product.id,
-        unit_id: product.unit_id,
-        unit_label: product.unit,
-    });
+function selectSuggestion(index) {
+    const product = currentSuggestions[index];
+    if (!product || product.stock <= 0) return;
 
-    exitProductMode();
-    renderBill();
+    addProductToBill(product, 1);
+
+    productScanInputEl.value = "";
+    clearSuggestions();
+    productScanInputEl.focus();
 }
 
-// ---------- RENDERING ----------
+productScanInputEl.addEventListener("keydown", async (event) => {
+    if (event.key === "ArrowDown") {
+        if (currentSuggestions.length === 0) return;
+        event.preventDefault();
+        highlightedIndex = (highlightedIndex + 1) % currentSuggestions.length;
+        renderProductSuggestions();
+        return;
+    }
+
+    if (event.key === "ArrowUp") {
+        if (currentSuggestions.length === 0) return;
+        event.preventDefault();
+        highlightedIndex = (highlightedIndex - 1 + currentSuggestions.length) % currentSuggestions.length;
+        renderProductSuggestions();
+        return;
+    }
+
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+
+    const code = productScanInputEl.value.trim();
+    if (!code) return;
+
+    clearTimeout(searchDebounceTimer);
+
+    if (currentSuggestions.length > 0 && highlightedIndex >= 0) {
+        selectSuggestion(highlightedIndex);
+        return;
+    }
+
+    const looksLikeBarcode = /^[0-9]+$/.test(code);
+
+    if (!looksLikeBarcode) {
+        await fetchProductSuggestions(code);
+        if (currentSuggestions.length > 0) {
+            selectSuggestion(0);
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch("/billing/lookup-barcode", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+            },
+            body: JSON.stringify({ barcode: code }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showBarcodeNotFound(code);
+            return;
+        }
+
+        if (data.stock <= 0) {
+            alert(`"${data.name}" is out of stock.`);
+            productScanInputEl.value = "";
+            productScanInputEl.focus();
+            return;
+        }
+
+        addProductToBill(data, 1);
+        productScanInputEl.value = "";
+        clearSuggestions();
+        productScanInputEl.focus();
+
+    } catch (error) {
+        alert("Could not reach the server. Please try again.");
+        productScanInputEl.focus();
+    }
+});
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && isSearchMode) {
+        hideSearchUI();
+    }
+});
+
+document.addEventListener("click", (event) => {
+    if (!isSearchMode) return;
+
+    const isInsideBox = productSearchBoxEl.contains(event.target);
+    const isProductButton = event.target.closest('[data-action="product"]');
+
+    if (!isInsideBox && !isProductButton) {
+        hideSearchUI();
+    }
+});
+
+function addProductToBill(product, quantity) {
+    const existingItem = billState.items.find((item) => item.product_id === product.id);
+
+    if (existingItem) {
+        existingItem.quantity += quantity;
+        existingItem.line_total = Math.round(existingItem.unit_price * existingItem.quantity * 100) / 100;
+    } else {
+        billState.items.push({
+            name: product.name,
+            unit_price: product.price,
+            quantity: quantity,
+            line_total: Math.round(product.price * quantity * 100) / 100,
+            product_id: product.id,
+            unit_id: product.unit_id,
+            unit_label: product.unit,
+        });
+    }
+
+    renderBill();
+}
 
 function renderDisplay() {
     displayModeEl.textContent = billState.mode === "product" ? "PRODUCT MODE" : "NORMAL MODE";
@@ -242,8 +383,6 @@ function updateTotals() {
 discountInputEl.addEventListener("input", updateTotals);
 cashInputEl.addEventListener("input", updateTotals);
 
-// ---------- SHOW BILL (saves to database) ----------
-
 showBillBtnEl.addEventListener("click", async () => {
     if (billState.finalized) {
         receiptOverlayEl.style.display = "flex";
@@ -255,14 +394,22 @@ showBillBtnEl.addEventListener("click", async () => {
         return;
     }
 
+    const customerNameValue = document.getElementById("customerName").value.trim();
+    if (!customerNameValue) {
+        alert("Please enter the customer's name before showing the bill.");
+        document.getElementById("customerName").focus();
+        return;
+    }
+
     const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
 
     const payload = {
-        customer_name: document.getElementById("customerName").value || null,
+        customer_name: customerNameValue,
         customer_phone: document.getElementById("customerPhone").value || null,
         discount: parseFloat(discountInputEl.value) || 0,
         cash_received: parseFloat(cashInputEl.value) || 0,
         payment_method: paymentMethod,
+        show_qr: document.getElementById("showQrCheckbox").checked,
         items: billState.items.map((item) => ({
             name: item.name,
             price: item.unit_price,
@@ -320,14 +467,12 @@ printReceiptBtnEl.addEventListener("click", () => {
 });
 
 function renderReceipt(sale) {
-    const tpl = activeTemplate || buildFallbackTemplate(shopNameEl.textContent);
+    const tpl = resolveEffectiveTemplate(activeTemplate, sale, shopNameEl.textContent);
     const order = getSectionOrder(tpl);
 
     applyReceiptContainerClasses(receiptContentEl, tpl);
     receiptContentEl.innerHTML = buildReceiptHtml(tpl, sale, order);
 }
-
-// ---------- NEW BILL (reset everything) ----------
 
 newBillBtnEl.addEventListener("click", () => {
     billState.items = [];
@@ -340,6 +485,7 @@ newBillBtnEl.addEventListener("click", () => {
     discountInputEl.value = 0;
     cashInputEl.value = 0;
     document.querySelector('input[name="paymentMethod"][value="cash"]').checked = true;
+    document.getElementById("showQrCheckbox").checked = defaultShowQr;
 
     billNumberEl.textContent = "New";
     billDateEl.textContent = getTodayDateString();
@@ -347,64 +493,22 @@ newBillBtnEl.addEventListener("click", () => {
     showBillBtnEl.textContent = "SHOW BILL";
     showBillBtnEl.disabled = false;
 
-    exitProductMode();
+    hideSearchUI();
     renderDisplay();
     renderBill();
 });
 
-// ---------- BARCODE SCANNING ----------
-// Scanners act like a keyboard: they "type" the barcode digits
-// very fast, then send an Enter key automatically.
+function showBarcodeNotFound(barcode) {
+    barcodeNotFoundCodeEl.textContent = barcode;
+    barcodeNotFoundOverlayEl.style.display = "flex";
+}
 
-barcodeInputEl.addEventListener("keydown", async (event) => {
-    if (event.key !== "Enter") return;
+function hideBarcodeNotFound() {
+    barcodeNotFoundOverlayEl.style.display = "none";
+    productScanInputEl.focus();
+}
 
-    const barcode = barcodeInputEl.value.trim();
-    barcodeInputEl.value = "";
+barcodeCancelBtnEl.addEventListener("click", hideBarcodeNotFound);
+barcodeSearchInsteadBtnEl.addEventListener("click", hideBarcodeNotFound);
 
-    if (!barcode) return;
-
-    try {
-        const response = await fetch("/billing/lookup-barcode", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "X-CSRF-TOKEN": csrfToken,
-            },
-            body: JSON.stringify({ barcode }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.message || "Product not found for this barcode.");
-            barcodeInputEl.focus();
-            return;
-        }
-
-        if (data.stock <= 0) {
-            alert(`"${data.name}" is out of stock.`);
-            barcodeInputEl.focus();
-            return;
-        }
-
-        addProductToBill(data, 1);
-        barcodeInputEl.focus();
-
-    } catch (error) {
-        alert("Could not reach the server. Please try scanning again.");
-        barcodeInputEl.focus();
-    }
-});
-
-// Keep the barcode box focused and ready whenever the cashier
-// isn't actively typing somewhere else (e.g. customer name, cash).
-document.addEventListener("click", (event) => {
-    const isTypingElsewhere = event.target.matches("input, textarea, select");
-    if (!isTypingElsewhere) {
-        barcodeInputEl.focus();
-    }
-});
-
-barcodeInputEl.focus();
+productScanInputEl.focus();

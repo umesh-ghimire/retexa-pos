@@ -40,6 +40,22 @@ function getSectionOrder(tpl) {
         : DEFAULT_SECTION_ORDER;
 }
 
+/**
+ * Builds the template actually used to render one sale's receipt:
+ * the given template (or fallback), with that sale's own show_qr
+ * override applied if one was chosen at checkout time.
+ */
+function resolveEffectiveTemplate(tpl, sale, shopNameFallback) {
+    const base = tpl || buildFallbackTemplate(shopNameFallback);
+    const effective = Object.assign({}, base);
+
+    if (sale && sale.show_qr !== null && sale.show_qr !== undefined) {
+        effective.show_qr = Boolean(sale.show_qr);
+    }
+
+    return effective;
+}
+
 // ---------- Per-section builders ----------
 
 function sectionHeaderHtml(tpl) {
@@ -132,15 +148,24 @@ function sectionPaymentHtml(tpl, sale) {
     if (tpl.show_change) {
         html += `<div class="receipt-total-row"><span>Change</span><span>${formatCurrency(sale.change_amount)}</span></div>`;
     }
+    if (sale.due_amount && parseFloat(sale.due_amount) > 0) {
+        html += `<div class="receipt-total-row" style="font-weight:700; color:#b91c1c;"><span>Due</span><span>${formatCurrency(sale.due_amount)}</span></div>`;
+    }
     return html;
 }
 
 function sectionQrHtml(tpl, sale) {
     if (!tpl.show_qr) return '';
+
+    const hasRealQr = typeof paymentQrImageUrl !== 'undefined' && paymentQrImageUrl;
+    const qrVisual = hasRealQr
+        ? `<img src="${paymentQrImageUrl}" class="receipt-qr-image">`
+        : `<div class="receipt-qr-placeholder"></div>`;
+
     return `<div class="receipt-qr-section">
         <div class="receipt-qr-label" style="font-weight:700; margin-bottom:4px;">Scan to Pay</div>
-        <div class="receipt-qr-placeholder"></div>
-        <div class="receipt-qr-label">${formatCurrency(sale.total)} (demo)</div>
+        ${qrVisual}
+        <div class="receipt-qr-label">${formatCurrency(sale.total)}${hasRealQr ? '' : ' (demo)'}</div>
     </div>`;
 }
 

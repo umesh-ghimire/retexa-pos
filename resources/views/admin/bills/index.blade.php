@@ -53,6 +53,7 @@
                                 <th>Customer</th>
                                 <th>Items</th>
                                 <th>Total</th>
+                                <th>Due</th>
                                 <th>Payment</th>
                                 <th>Actions</th>
                             </tr>
@@ -64,14 +65,23 @@
                                     <td>{{ $sale->created_at->format('Y-m-d H:i') }}</td>
                                     <td>{{ $sale->customer->name ?? 'Walk-in' }}</td>
                                     <td>{{ $sale->items->count() }}</td>
-                                    <td>Rs. {{ number_format($sale->total, 2) }}</td>
-                                    <td>
-                                        @if ($sale->payment_method === 'cash')
-                                            <span class="badge badge-success">Cash</span>
-                                        @else
-                                            <span class="badge badge-info">QR</span>
-                                        @endif
-                                    </td>
+                                    <td>Rs. {{ number_format($sale->total) }}</td>
+<td>
+    @if ($sale->due_amount > 0)
+        <span class="badge badge-danger">Rs. {{ number_format($sale->due_amount) }}</span>
+    @else
+        —
+    @endif
+</td>
+<td>
+    @if ($sale->payment_method === 'cash')
+        <span class="badge badge-success">Cash</span>
+    @elseif ($sale->payment_method === 'qr')
+        <span class="badge badge-info">QR</span>
+    @else
+        <span class="badge badge-warning">Credit</span>
+    @endif
+</td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-primary"
                                                 onclick='openBillModal(@json($sale), @json($sale->billTemplate))'>
@@ -119,4 +129,7 @@
 @section('scripts')
     <script src="{{ asset('js/receipt-renderer.js') }}"></script>
     <script src="{{ asset('admin-assets/js/admin-bills.js') }}"></script>
+    <script>
+        const paymentQrImageUrl = @json($paymentQrUrl);
+    </script>
 @endsection

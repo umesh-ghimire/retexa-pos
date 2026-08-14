@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/billing', [BillingController::class, 'index']);
     Route::post('/billing/checkout', [BillingController::class, 'store']);
     Route::post('/billing/lookup-barcode', [BillingController::class, 'lookupBarcode']);
+    Route::get('/billing/search-products', [BillingController::class, 'searchProducts']);
 });
 
 Route::get('/inventory', function () {

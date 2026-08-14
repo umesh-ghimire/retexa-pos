@@ -39,16 +39,27 @@
             <button class="calc-btn calc-btn--enter" data-action="enter">ENTER</button>
         </div>
 
-        <div class="product-search-box" id="productSearchBox" style="display:none;">
-            <input type="text" id="productSearchInput" placeholder="Type product name...">
-            <div class="product-suggestions" id="productSuggestions"></div>
+        <div class="barcode-not-found-overlay" id="barcodeNotFoundOverlay" style="display:none;">
+            <div class="barcode-not-found-box">
+                <p class="barcode-not-found-title">Barcode not found</p>
+                <p class="barcode-not-found-code" id="barcodeNotFoundCode"></p>
+                <div class="barcode-not-found-actions">
+                    @if ($isOwner)
+                        <a href="{{ url('/admin/products') }}" target="_blank" class="btn-create-product">Create Product</a>
+                    @endif
+                    <button type="button" class="btn-search-instead" id="barcodeSearchInsteadBtn">Try Again</button>
+                    <button type="button" class="btn-cancel-barcode" id="barcodeCancelBtn">Cancel</button>
+                </div>
+            </div>
         </div>
 
-        <div class="barcode-scan-box">
-            <label for="barcodeInput" style="font-size:0.8rem; color:var(--color-text-muted); display:block; margin-bottom:4px;">
-                Scan Barcode
-            </label>
-            <input type="text" id="barcodeInput" placeholder="Ready to scan..." autocomplete="off">
+        <div class="product-search-box" id="productSearchBox">
+            <div class="product-search-box__header">
+                <label for="productScanInput">Search or Scan Product</label>
+                <button type="button" class="product-search-close-btn" id="productSearchCloseBtn" aria-label="Close search">✕</button>
+            </div>
+            <input type="text" id="productScanInput" placeholder="Type a product name or scan a barcode..." autocomplete="off">
+            <div class="product-suggestions" id="productSuggestions"></div>
         </div>
 
     </div>
@@ -63,7 +74,7 @@
         </div>
 
         <div class="bill-customer">
-            <input type="text" id="customerName" placeholder="Customer name (optional)">
+            <input type="text" id="customerName" placeholder="Customer name (required)" required>
             <input type="text" id="customerPhone" placeholder="Customer phone (optional)">
         </div>
 
@@ -97,6 +108,13 @@
                 <span>
                     <label><input type="radio" name="paymentMethod" value="cash" checked> Cash</label>
                     <label><input type="radio" name="paymentMethod" value="qr"> QR</label>
+                    <label><input type="radio" name="paymentMethod" value="credit"> Credit</label>
+                </span>
+            </div>
+            <div class="total-row payment-method-row">
+                <span>Show QR on Receipt</span>
+                <span>
+                    <label><input type="checkbox" id="showQrCheckbox" {{ (!$template || $template->show_qr) ? 'checked' : '' }}> Show</label>
                 </span>
             </div>
         </div>
@@ -104,11 +122,6 @@
         <div class="bill-action-buttons">
             <button class="btn-new-bill" id="newBillBtn">New Bill</button>
             <button class="btn-show-bill" id="showBillBtn">SHOW BILL</button>
-
-        <form method="POST" action="{{ url('/billing/logout') }}" style="margin-top:8px;">
-            @csrf
-            <button type="submit" class="btn-new-bill" style="width:100%;">Logout</button>
-        </form>
         </div>
 
     </div>
@@ -129,8 +142,9 @@
 
 @section('scripts')
     <script>
-        const realProducts = @json($products);
         const activeTemplate = @json($template);
+        const paymentQrImageUrl = @json($paymentQrUrl);
+        const defaultShowQr = @json(!$template || $template->show_qr);
     </script>
     <script src="{{ asset('js/receipt-renderer.js') }}"></script>
     <script src="{{ asset('js/billing.js') }}"></script>

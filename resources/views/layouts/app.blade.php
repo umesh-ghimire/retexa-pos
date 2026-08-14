@@ -16,15 +16,27 @@
 <body>
 
     <nav class="app-nav">
+    <div class="app-nav__left">
         <div class="app-nav__brand">Smart Retail POS</div>
         <div class="app-nav__links">
-            <a href="{{  url('/dashboard') }}" class="{{  request()->is('dashboard') ? 'active' : '' }}">Dashboard</a>
-            <a href="{{ url('/billing') }}" class="{{ request ()->is('billing') ? 'active' : '' }}">Billing</a>
-            <a href="{{ url('/inventory') }}" class="{{ request ()->is('inventory') ? 'active' : '' }}">Inventory</a>
-            <a href="{{ url('/bill-history') }}" class="{{ request ()->is('bill-history') ? 'active' : '' }}">Bill History</a>
-            <a href="{{ url('/settings') }}" class="{{ request ()->is('settings') ? 'active' : '' }}">Settings</a>
+            <a href="{{ url('/billing') }}" class="{{ request()->is('billing') ? 'active' : '' }}">Billing</a>
+            @auth
+                @if (auth()->user()->isOwner())
+                    <a href="{{ url('/admin/dashboard') }}">Admin Panel</a>
+                @endif
+            @endauth
         </div>
-    </nav>
+    </div>
+    <div class="app-nav__user">
+        @auth
+            <span class="app-nav__username">{{ auth()->user()->name }}</span>
+            <form method="POST" action="{{ url('/billing/logout') }}">
+                @csrf
+                <button type="submit" class="app-nav__logout-btn">Logout</button>
+            </form>
+        @endauth
+    </div>
+</nav>
 
     <main class="app-main">
         @yield('content')

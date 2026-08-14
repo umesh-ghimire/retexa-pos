@@ -39,7 +39,9 @@ class SaleController extends Controller
         }
 
         $sales = $query->paginate(20)->withQueryString();
+        $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
+        $paymentQrUrl = $paymentQrPath ? asset('storage/' . $paymentQrPath) : null;
 
-        return view('admin.bills.index', compact('sales'));
+        return view('admin.bills.index', compact('sales', 'paymentQrUrl'));
     }
 }

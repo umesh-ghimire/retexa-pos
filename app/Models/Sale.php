@@ -18,7 +18,9 @@ class Sale extends Model
         'total',
         'cash_received',
         'change_amount',
+        'due_amount',
         'payment_method',
+        'show_qr',
     ];
 
     protected $casts = [
@@ -27,6 +29,8 @@ class Sale extends Model
         'total' => 'decimal:2',
         'cash_received' => 'decimal:2',
         'change_amount' => 'decimal:2',
+        'due_amount' => 'decimal:2',
+        'show_qr' => 'boolean',
     ];
 
     /**
