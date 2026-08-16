@@ -16,20 +16,33 @@ class BillingController extends Controller
     /**
      * Show the billing/POS screen.
      */
-    public function index()
-    {
-        $template = BillTemplate::where('is_default', true)->first();
-        $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
-        $paymentQrUrl = $paymentQrPath ? asset('storage/' . $paymentQrPath) : null;
+ public function index()
+{
+    $template = BillTemplate::where('is_default', true)->first();
 
-        return view('billing.index', [
-            'shopName' => $template->shop_name ?? 'My Shop',
-            'template' => $template,
-            'defaultDiscount' => \App\Models\Setting::get('default_discount', 0),
-            'paymentQrUrl' => $paymentQrUrl,
-            'isOwner' => auth()->user()->isOwner(),
-        ]);
-    }
+    $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
+    $paymentQrUrl = $paymentQrPath
+        ? asset('storage/' . $paymentQrPath)
+        : null;
+
+    $printerPaperWidthMm = (float) \App\Models\Setting::get(
+        'printer_paper_width_mm',
+        72
+    );
+
+        $printerVars = \App\Models\Setting::printerCssVars();
+
+
+     return view('billing.index', [
+        'shopName' => $template->shop_name ?? 'My Shop',
+        'template' => $template,
+        'defaultDiscount' => \App\Models\Setting::get('default_discount', 0),
+        'paymentQrUrl' => $paymentQrUrl,
+        'printerVars' => $printerVars,
+        'printerPaperWidthMm' => $printerPaperWidthMm,
+        'isOwner' => auth()->user()->isOwner(),
+    ]);
+}
 
     /**
      * Save a completed sale: creates the bill, its line items,
@@ -142,13 +155,14 @@ class BillingController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        $sale->load(['items.product', 'items.unit', 'customer']);
+        $sale->load(['items.product', 'items.unit', 'customer', 'createdBy']);
 
         return response()->json([
             'bill_number' => $sale->bill_number,
             'date' => $sale->created_at->format('Y-m-d'),
             'created_at' => $sale->created_at->toIso8601String(),
             'customer_name' => $sale->customer->name ?? null,
+            'cashier_name' => optional($sale->createdBy)->name,
             'customer_phone' => $sale->customer->phone ?? null,
             'show_qr' => (bool) $sale->show_qr,
             'subtotal' => (float) $sale->subtotal,

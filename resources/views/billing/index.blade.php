@@ -4,6 +4,14 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('css/billing.css') }}">
+    <style>
+        :root {
+            --print-paper-width: {{ $printerVars['width'] }};
+            --print-page-length: {{ $printerVars['length'] }};
+            --print-font-size: {{ $printerVars['font_size'] }};
+            --print-font-weight: {{ $printerVars['font_weight'] }};
+        }
+    </style>
 @endsection
 
 @section('content')
@@ -145,7 +153,10 @@
         const activeTemplate = @json($template);
         const paymentQrImageUrl = @json($paymentQrUrl);
         const defaultShowQr = @json(!$template || $template->show_qr);
+        const printerPaperWidthMm = {{ $printerPaperWidthMm }};
+        const printerCopies = {{ $printerVars['copies'] }};
     </script>
     <script src="{{ asset('js/receipt-renderer.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
     <script src="{{ asset('js/billing.js') }}"></script>
 @endsection

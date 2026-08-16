@@ -463,15 +463,25 @@ closeReceiptBtnEl.addEventListener("click", () => {
 });
 
 printReceiptBtnEl.addEventListener("click", () => {
-    window.print();
+    const copies = (typeof printerCopies !== "undefined" && printerCopies > 1) ? printerCopies : 1;
+
+    if (copies > 1) {
+        const original = receiptContentEl.innerHTML;
+        const cutLine = '<div style="border-top:1px dashed #000; margin:6mm 0;"></div>';
+        receiptContentEl.innerHTML = Array(copies).fill(original).join(cutLine);
+        window.print();
+        receiptContentEl.innerHTML = original;
+    } else {
+        window.print();
+    }
 });
 
 function renderReceipt(sale) {
     const tpl = resolveEffectiveTemplate(activeTemplate, sale, shopNameEl.textContent);
     const order = getSectionOrder(tpl);
 
-    applyReceiptContainerClasses(receiptContentEl, tpl);
-    receiptContentEl.innerHTML = buildReceiptHtml(tpl, sale, order);
+    applyReceiptContainerClasses(receiptContentEl, tpl, printerPaperWidthMm);
+    receiptContentEl.innerHTML = renderReceiptForTemplate(tpl, sale, order);
 }
 
 newBillBtnEl.addEventListener("click", () => {

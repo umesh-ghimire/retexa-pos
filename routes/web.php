@@ -64,9 +64,14 @@ Route::prefix('admin')->middleware(['auth', 'owner'])->group(function () {
         ->names('admin.products');  
 
     Route::post('/products/{product}/generate-barcode', [ProductController::class, 'generateBarcode'])->name('admin.products.generateBarcode');    
+    Route::get('/products/{product}/label', [ProductController::class, 'printLabel'])->name('admin.products.label');
+    Route::get('/settings/test-print', [SettingController::class, 'testPrint'])->name('admin.settings.testPrint');
+    Route::get('/settings/test-label', [SettingController::class, 'testLabel'])->name('admin.settings.testLabel');
 
     Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
     Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('admin.users.update');
+    Route::patch('/users/{user}/status', [UserController::class, 'updateStatus'])->name('admin.users.updateStatus');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');    
         
     Route::get('/inventory', [InventoryController::class, 'index'])->name('admin.inventory.index');
@@ -87,7 +92,7 @@ Route::prefix('admin')->middleware(['auth', 'owner'])->group(function () {
 
     Route::get('/settings', [SettingController::class, 'index'])->name('admin.settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->name('admin.settings.update');
+
+    Route::get('/bill-templates/{billTemplate}/designer', [BillTemplateController::class, 'designer'])->name('admin.bill-templates.designer');
+Route::post('/bill-templates/{billTemplate}/save-layout', [BillTemplateController::class, 'saveLayout'])->name('admin.bill-templates.saveLayout');
 });
-
-
-

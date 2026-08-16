@@ -407,7 +407,7 @@
    and size the paper itself to match real thermal paper widths. */
 @media print {
     @page {
-        size: 72mm 200mm;
+        size: var(--print-paper-width, 72mm) var(--print-page-length, 200mm);
         margin: 0;
     }
 
@@ -421,34 +421,18 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 72mm !important;
-        max-width: 72mm !important;
+        width: var(--print-paper-width, 72mm) !important;
+        max-width: var(--print-paper-width, 72mm) !important;
         box-sizing: border-box;
         padding: 2mm 3mm;
         box-shadow: none !important;
         font-family: Arial, Helvetica, sans-serif !important;
-        font-size: 21px;
-        font-weight: 800;
+        font-size: var(--print-font-size, 21px);
+        font-weight: var(--print-font-weight, 800);
         line-height: 1.45;
         color: #000000 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-    }
-
-    .receipt-content .receipt-shop-name {
-        font-size: 1.25em;
-    }
-
-    .receipt-content .receipt-total-row--grand {
-        font-size: 1.2em !important;
-    }
-
-    .receipt-content .receipt-qr-label {
-        font-size: 0.85em !important;
-    }
-
-    .receipt-content .receipt-items-table th {
-        font-size: 0.9em;
     }
 
     .receipt-content * {
@@ -997,3 +981,12 @@
     object-fit: contain;
     margin-bottom: 4px;
 }
+
+
+.receipt-content.spacing-line-tight .receipt-meta-row,
+.receipt-content.spacing-line-tight .receipt-total-row { padding: 0; }
+.receipt-content.spacing-line-relaxed .receipt-meta-row,
+.receipt-content.spacing-line-relaxed .receipt-total-row { padding: 3px 0; }
+
+.receipt-content.spacing-section-tight .receipt-divider { margin: 4px 0; }
+.receipt-content.spacing-section-relaxed .receipt-divider { margin: 12px 0; }

@@ -13,18 +13,23 @@ class InventoryController extends Controller
     /**
      * Show the inventory overview: stock levels + recent movement history.
      */
-    public function index()
+    public function index(Request $request)
     {
         $products = Product::with(['category', 'unit'])
             ->orderBy('name')
             ->get();
 
-        $recentMovements = StockMovement::with(['product', 'createdBy'])
-            ->latest()
-            ->limit(20)
-            ->get();
+        $movementType = $request->query('movement_type');
 
-        return view('admin.inventory.index', compact('products', 'recentMovements'));
+        $movementsQuery = StockMovement::with(['product', 'createdBy'])->latest();
+
+        if (in_array($movementType, ['in', 'out', 'set'], true)) {
+            $movementsQuery->where('type', $movementType);
+        }
+
+        $recentMovements = $movementsQuery->paginate(5)->withQueryString();
+
+        return view('admin.inventory.index', compact('products', 'recentMovements', 'movementType'));
     }
 
     /**

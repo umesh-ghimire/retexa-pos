@@ -29,6 +29,16 @@ class AuthController extends Controller
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
+
+            if ($user->status === 'disabled') {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'email' => 'Your account has been disabled. Please contact the shop owner.',
+                ])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
             return redirect()->intended('/admin/dashboard');
         }

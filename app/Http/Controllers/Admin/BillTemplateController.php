@@ -17,11 +17,10 @@ class BillTemplateController extends Controller
     public function index()
     {
         $templates = BillTemplate::orderByDesc('is_default')->orderBy('name')->get();
+        $latestSale = \App\Models\Sale::with(['items.product', 'items.unit', 'customer', 'createdBy'])->latest()->first();
+        $printerPaperWidthMm = (float) \App\Models\Setting::get('printer_paper_width_mm', 72);
 
-        // Used to power the live preview with real data, if any sale exists yet
-        $latestSale = Sale::with(['items.product', 'items.unit', 'customer'])->latest()->first();
-
-        return view('admin.bill-templates.index', compact('templates', 'latestSale'));
+        return view('admin.bill-templates.index', compact('templates', 'latestSale', 'printerPaperWidthMm'));
     }
 
     /**
@@ -121,7 +120,6 @@ class BillTemplateController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:bill_templates,name,' . $templateId],
-            'paper_width' => ['required', 'in:58mm,80mm'],
             'font_size' => ['required', 'in:small,medium,large'],
             'alignment' => ['required', 'in:left,center,right'],
             'shop_name' => ['nullable', 'string', 'max:255'],
@@ -129,6 +127,10 @@ class BillTemplateController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'header_text' => ['nullable', 'string', 'max:255'],
             'footer_text' => ['nullable', 'string', 'max:255'],
+            'vat_pan_number' => ['nullable', 'string', 'max:100'],
+            'vat_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'line_spacing' => ['required', 'in:tight,normal,relaxed'],
+            'section_spacing' => ['required', 'in:tight,normal,relaxed'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'section_order' => ['nullable', 'string'],
         ]);
@@ -140,6 +142,7 @@ class BillTemplateController extends Controller
             'show_logo', 'show_customer', 'show_bill_number', 'show_date', 'show_sku',
             'show_quantity', 'show_unit', 'show_price', 'show_subtotal', 'show_discount',
             'show_cash_received', 'show_change', 'show_qr',
+            'show_cashier', 'show_payment_method', 'calculate_vat',
         ];
 
         foreach ($toggleFields as $field) {
@@ -147,5 +150,37 @@ class BillTemplateController extends Controller
         }
 
         return $validated;
+    }
+
+    /**
+     * Full-page visual designer for a bill template.
+     */
+    public function designer(BillTemplate $billTemplate)
+    {
+        $latestSale = \App\Models\Sale::with(['items.product', 'items.unit', 'customer'])->latest()->first();
+        $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
+        $paymentQrUrl = $paymentQrPath ? asset('storage/' . $paymentQrPath) : null;
+        $printerPaperWidthMm = (float) \App\Models\Setting::get('printer_paper_width_mm', 72);
+
+        return view('admin.bill-templates.designer', [
+            'template' => $billTemplate,
+            'latestSale' => $latestSale,
+            'paymentQrUrl' => $paymentQrUrl,
+            'printerPaperWidthMm' => $printerPaperWidthMm,
+        ]);
+    }
+
+    /**
+     * Save the canvas layout (elements + paper width) for a template.
+     */
+    public function saveLayout(Request $request, BillTemplate $billTemplate)
+    {
+        $validated = $request->validate([
+            'canvas_layout' => ['required', 'array'],
+        ]);
+
+        $billTemplate->update(['canvas_layout' => $validated['canvas_layout']]);
+
+        return response()->json(['message' => 'Saved successfully.']);
     }
 }

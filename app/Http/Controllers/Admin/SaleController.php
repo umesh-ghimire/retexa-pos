@@ -14,6 +14,7 @@ class SaleController extends Controller
     public function index(Request $request)
     {
         $query = Sale::with(['items.product', 'items.unit', 'customer', 'billTemplate'])->latest();
+        $printerPaperWidthMm = (float) \App\Models\Setting::get('printer_paper_width_mm', 72);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -41,7 +42,8 @@ class SaleController extends Controller
         $sales = $query->paginate(20)->withQueryString();
         $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
         $paymentQrUrl = $paymentQrPath ? asset('storage/' . $paymentQrPath) : null;
+        $printerVars = \App\Models\Setting::printerCssVars();
 
-        return view('admin.bills.index', compact('sales', 'paymentQrUrl'));
+        return view('admin.bills.index', compact('sales', 'paymentQrUrl', 'printerVars'));
     }
 }

@@ -85,6 +85,21 @@ class ProductController extends Controller
     }
 
     /**
+     * Show the printable barcode label page for a product.
+     */
+    public function printLabel(Product $product)
+    {
+        if (! $product->barcode) {
+            return back()->withErrors(['barcode' => 'This product has no barcode yet. Generate or assign one first.']);
+        }
+
+        $shopName = \App\Models\Setting::get('shop_name', 'My Shop');
+        $labelVars = \App\Models\Setting::labelCssVars();
+
+        return view('admin.products.label', compact('product', 'shopName', 'labelVars'));
+    }
+
+    /**
      * Shared validation rules for store() and update().
      */
     private function validateProduct(Request $request, ?int $productId = null): array

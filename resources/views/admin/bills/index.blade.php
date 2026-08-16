@@ -5,6 +5,14 @@
 @section('styles')
     {{-- Reusing the receipt styling from the billing screen so the "View Bill" modal looks like a real receipt --}}
     <link rel="stylesheet" href="{{ asset('css/billing.css') }}">
+    <style>
+        :root {
+            --print-paper-width: {{ $printerVars['width'] }};
+            --print-page-length: {{ $printerVars['length'] }};
+            --print-font-size: {{ $printerVars['font_size'] }};
+            --print-font-weight: {{ $printerVars['font_weight'] }};
+        }
+    </style>
 @endsection
 
 @section('content')
@@ -119,15 +127,18 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="window.print()">Print</button>
+                <button type="button" class="btn btn-primary" onclick="printBillModal()">Print</button>
             </div>
         </div>
     </div>
 </div>
+<script>const printerCopies = {{ $printerVars['copies'] }};</script>
+<script>const printerPaperWidthMm = {{ $printerPaperWidthMm }};</script>
 @endsection
 
 @section('scripts')
     <script src="{{ asset('js/receipt-renderer.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
     <script src="{{ asset('admin-assets/js/admin-bills.js') }}"></script>
     <script>
         const paymentQrImageUrl = @json($paymentQrUrl);
