@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SaleController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
@@ -77,6 +78,11 @@ Route::prefix('admin')->middleware(['auth', 'owner'])->group(function () {
     Route::get('/inventory', [InventoryController::class, 'index'])->name('admin.inventory.index');
     Route::post('/inventory/{product}/adjust', [InventoryController::class, 'adjust'])->name('admin.inventory.adjust');    
     Route::get('/bills', [SaleController::class, 'index'])->name('admin.bills.index');
+
+    Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports.index');
+    Route::get('/reports/export/csv', [ReportController::class, 'exportCsv'])->name('admin.reports.export.csv');
+    Route::get('/reports/export/excel', [ReportController::class, 'exportExcel'])->name('admin.reports.export.excel');
+    Route::get('/reports/export/pdf', [ReportController::class, 'exportPdf'])->name('admin.reports.export.pdf');
 
     Route::get('/bill-templates', [BillTemplateController::class, 'index'])->name('admin.bill-templates.index');
     Route::post('/bill-templates/{billTemplate}/set-default', [BillTemplateController::class, 'setDefault'])->name('admin.bill-templates.setDefault');

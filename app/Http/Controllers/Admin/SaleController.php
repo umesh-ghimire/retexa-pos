@@ -44,6 +44,6 @@ class SaleController extends Controller
         $paymentQrUrl = $paymentQrPath ? asset('storage/' . $paymentQrPath) : null;
         $printerVars = \App\Models\Setting::printerCssVars();
 
-        return view('admin.bills.index', compact('sales', 'paymentQrUrl', 'printerVars'));
+        return view('admin.bills.index', compact('sales', 'paymentQrUrl', 'printerVars', 'printerPaperWidthMm'));
     }
 }
