@@ -98,6 +98,7 @@ Route::prefix('admin')->middleware(['auth', 'owner'])->group(function () {
 
     Route::get('/settings', [SettingController::class, 'index'])->name('admin.settings.index');
     Route::put('/settings', [SettingController::class, 'update'])->name('admin.settings.update');
+    Route::post('/settings/backup-now', [SettingController::class, 'backupNow'])->name('admin.settings.backupNow');
 
     Route::get('/bill-templates/{billTemplate}/designer', [BillTemplateController::class, 'designer'])->name('admin.bill-templates.designer');
 Route::post('/bill-templates/{billTemplate}/save-layout', [BillTemplateController::class, 'saveLayout'])->name('admin.bill-templates.saveLayout');

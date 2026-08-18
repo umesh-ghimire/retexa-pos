@@ -291,7 +291,9 @@
 
                 <div class="product-card-body">
                     <div class="product-name" title="{{ $product->name }}">{{ $product->name }}</div>
-                    <div class="product-meta">SKU: {{ $product->sku ?? '—' }}</div>
+                    @if (\App\Models\Setting::get('show_product_sku', true))
+                        <div class="product-meta">SKU: {{ $product->sku ?? '—' }}</div>
+                    @endif
 
                     <div class="product-price-row">
                         <span class="product-price">Rs. {{ number_format($product->price, 2) }}</span>

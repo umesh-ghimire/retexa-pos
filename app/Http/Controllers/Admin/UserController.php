@@ -3,13 +3,28 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
+    /**
+     * Password rule set for new/changed passwords, driven by the
+     * "Require Strong Password" toggle in Other Settings.
+     */
+    private function passwordRule(): array
+    {
+        if (Setting::get('require_strong_password')) {
+            return ['string', Password::min(8)->mixedCase()->numbers()];
+        }
+
+        return ['string', 'min:6'];
+    }
+
     public function index()
     {
         $users = User::latest()->get();
@@ -22,7 +37,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => array_merge(['required'], $this->passwordRule()),
             'role' => ['required', 'in:owner,cashier'],
         ]);
 
@@ -47,7 +62,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', 'in:owner,cashier'],
-            'password' => ['nullable', 'string', 'min:6'],
+            'password' => array_merge(['nullable'], $this->passwordRule()),
         ]);
 
         if (! empty($validated['password'])) {

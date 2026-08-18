@@ -39,7 +39,7 @@ class SaleController extends Controller
             $query->where('payment_method', $request->payment_method);
         }
 
-        $sales = $query->paginate(20)->withQueryString();
+        $sales = $query->paginate((int) \App\Models\Setting::get('items_per_page', 20))->withQueryString();
         $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
         $paymentQrUrl = $paymentQrPath ? asset('storage/' . $paymentQrPath) : null;
         $printerVars = \App\Models\Setting::printerCssVars();

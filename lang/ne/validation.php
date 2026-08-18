@@ -1,0 +1,46 @@
+<?php
+
+return [
+    'required' => ':attribute आवश्यक छ।',
+    'email' => ':attribute मान्य इमेल ठेगाना हुनुपर्छ।',
+    'unique' => ':attribute पहिले नै प्रयोग भइसकेको छ।',
+    'min' => [
+        'numeric' => ':attribute कम्तीमा :min हुनुपर्छ।',
+        'string' => ':attribute कम्तीमा :min अक्षरको हुनुपर्छ।',
+    ],
+    'max' => [
+        'numeric' => ':attribute :max भन्दा बढी हुनु हुँदैन।',
+        'string' => ':attribute :max अक्षर भन्दा लामो हुनु हुँदैन।',
+        'file' => ':attribute :max किलोबाइट भन्दा ठूलो हुनु हुँदैन।',
+    ],
+    'numeric' => ':attribute संख्या हुनुपर्छ।',
+    'integer' => ':attribute पूर्ण संख्या हुनुपर्छ।',
+    'string' => ':attribute अक्षरहरूको हुनुपर्छ।',
+    'boolean' => ':attribute हो वा होइन मात्र हुन सक्छ।',
+    'confirmed' => ':attribute पुष्टि मिलेन।',
+    'in' => 'चयन गरिएको :attribute मान्य छैन।',
+    'image' => ':attribute एउटा तस्बिर हुनुपर्छ।',
+    'date' => ':attribute मान्य मिति हुनुपर्छ।',
+    'date_format' => ':attribute ढाँचा :format सँग मेल खानुपर्छ।',
+    'timezone' => ':attribute मान्य समय क्षेत्र हुनुपर्छ।',
+    'required_if' => ':other को मान :value भएको बेला :attribute आवश्यक छ।',
+
+    'attributes' => [
+        'name' => 'नाम',
+        'email' => 'इमेल',
+        'password' => 'पासवर्ड',
+        'phone' => 'फोन नम्बर',
+        'address' => 'ठेगाना',
+        'shop_name' => 'पसलको नाम',
+        'default_discount' => 'पूर्वनिर्धारित छुट',
+        'low_stock_threshold' => 'न्यून स्टक सीमा',
+        'business_start_date' => 'व्यापार सुरु मिति',
+        'default_language' => 'भाषा',
+        'app_timezone' => 'समय क्षेत्र',
+        'items_per_page' => 'प्रति पृष्ठ वस्तुहरू',
+        'backup_time' => 'ब्याकअप समय',
+        'keep_backup_for_days' => 'ब्याकअप राख्ने दिन',
+        'auto_logout_minutes' => 'स्वतः लगआउट (मिनेट)',
+        'login_session_limit' => 'लगइन सत्र सीमा',
+    ],
+];

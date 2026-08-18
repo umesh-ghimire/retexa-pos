@@ -177,6 +177,7 @@
             <div class="stat-sub">All items available</div>
             <svg class="stat-wave" viewBox="0 0 400 40" preserveAspectRatio="none"><path d="{{ $waveGreen }}" fill="#1ca54a"></path></svg>
         </div>
+        @if (\App\Models\Setting::get('enable_stock_management', true))
         <div class="inv-stat-card bg-low">
             <span class="stat-icon"><i class="fas fa-chart-line"></i></span>
             <div class="stat-label">Low Stock</div>
@@ -184,6 +185,7 @@
             <div class="stat-sub">Below minimum level</div>
             <svg class="stat-wave" viewBox="0 0 400 40" preserveAspectRatio="none"><path d="{{ $waveAmber }}" fill="#c9790a"></path></svg>
         </div>
+        @endif
         <div class="inv-stat-card bg-out">
             <span class="stat-icon"><i class="fas fa-box-open"></i></span>
             <div class="stat-label">Out of Stock</div>
@@ -213,7 +215,7 @@
             <select id="stockStatusFilter" class="form-control">
                 <option value="">All Status</option>
                 <option value="in">In Stock</option>
-                <option value="low">Low Stock</option>
+                <option value="low" @if(!\App\Models\Setting::get('enable_stock_management', true)) style="display:none;" @endif>Low Stock</option>
                 <option value="out">Out of Stock</option>
             </select>
         </div>

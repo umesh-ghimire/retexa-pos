@@ -26,7 +26,7 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->paginate(20)->withQueryString();
+        $customers = $query->paginate((int) \App\Models\Setting::get('items_per_page', 20))->withQueryString();
 
         return view('admin.customers.index', compact('customers'));
     }

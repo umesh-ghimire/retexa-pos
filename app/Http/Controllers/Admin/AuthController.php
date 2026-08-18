@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -40,6 +42,28 @@ class AuthController extends Controller
             }
 
             $request->session()->regenerate();
+
+            // "Login Session Limit" — keep at most N-1 of this user's OTHER
+            // active sessions (the Nth slot is this new login). Since the
+            // session driver is 'database', deleting old rows here forces
+            // those other logins to be treated as logged-out on their next
+            // request — no extra tracking table needed.
+            $limit = (int) Setting::get('login_session_limit', 0);
+            if ($limit > 0) {
+                $currentSessionId = $request->session()->getId();
+
+                $otherSessionIds = DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->where('id', '!=', $currentSessionId)
+                    ->orderByDesc('last_activity')
+                    ->pluck('id');
+
+                $idsToRemove = $otherSessionIds->slice(max(0, $limit - 1));
+                if ($idsToRemove->isNotEmpty()) {
+                    DB::table('sessions')->whereIn('id', $idsToRemove)->delete();
+                }
+            }
+
             return redirect()->intended('/admin/dashboard');
         }
 

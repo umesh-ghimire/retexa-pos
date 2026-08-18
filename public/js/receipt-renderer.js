@@ -188,6 +188,13 @@ function sectionFooterHtml(tpl) {
     return `<div class="receipt-footer">${tpl.footer_text}<span class="footer-smiley">☺</span></div>`;
 }
 
+function sectionBarcodeHtml(tpl, sale) {
+    if (!tpl.show_barcode) return '';
+    return `<div class="receipt-barcode-section" style="text-align:center; margin:6px 0;">
+        <svg class="canvas-barcode-svg" data-value="${sale.bill_number || ''}" style="width:90%; max-width:220px;"></svg>
+    </div>`;
+}
+
 const SECTION_BUILDERS = {
     header: sectionHeaderHtml,
     bill_info: sectionBillInfoHtml,
@@ -196,12 +203,30 @@ const SECTION_BUILDERS = {
     totals: sectionTotalsHtml,
     payment: sectionPaymentHtml,
     qr: sectionQrHtml,
+    barcode: sectionBarcodeHtml,
     footer: sectionFooterHtml,
 };
 
 function buildReceiptHtml(tpl, sale, order) {
     let html = '';
-    (order || DEFAULT_SECTION_ORDER).forEach((key) => {
+    let sections = order || DEFAULT_SECTION_ORDER;
+
+    // "Show Barcode on Receipt" (tpl.show_barcode) is a template-level
+    // toggle, independent of section_order. If the template wants a
+    // barcode and the section list doesn't already place one, add it
+    // just before the footer so it still renders without requiring
+    // every existing saved template to be re-saved with a new order.
+    if (tpl.show_barcode && sections.indexOf('barcode') === -1) {
+        sections = sections.slice();
+        const footerIndex = sections.indexOf('footer');
+        if (footerIndex === -1) {
+            sections.push('barcode');
+        } else {
+            sections.splice(footerIndex, 0, 'barcode');
+        }
+    }
+
+    sections.forEach((key) => {
         const builder = SECTION_BUILDERS[key];
         if (builder) html += builder(tpl, sale);
     });
@@ -229,6 +254,7 @@ function buildFallbackTemplate(shopName) {
         show_bill_number: true,
         show_date: true,
         show_sku: false,
+        show_barcode: false,
         show_quantity: true,
         show_unit: true,
         show_price: true,
@@ -393,5 +419,17 @@ function renderReceiptForTemplate(tpl, sale, order) {
         }, 0);
         return html;
     }
-    return buildReceiptHtml(tpl, sale, order || getSectionOrder(tpl));
+
+    const html = buildReceiptHtml(tpl, sale, order || getSectionOrder(tpl));
+    if (tpl && tpl.show_barcode) {
+        setTimeout(() => {
+            document.querySelectorAll('.canvas-barcode-svg').forEach((svg) => {
+                const value = svg.getAttribute('data-value');
+                if (value && typeof JsBarcode !== 'undefined') {
+                    JsBarcode(svg, value, { format: 'CODE128', displayValue: true, fontSize: 10, height: 30, margin: 2 });
+                }
+            });
+        }, 0);
+    }
+    return html;
 }

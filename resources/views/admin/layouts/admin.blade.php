@@ -39,6 +39,5 @@
     <script src="{{ asset('admin-assets/js/custom.js') }}"></script>
 
 @yield('scripts')
-    @yield('scripts')
 </body>
 </html>

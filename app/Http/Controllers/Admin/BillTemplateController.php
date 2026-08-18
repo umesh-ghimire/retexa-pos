@@ -139,7 +139,7 @@ class BillTemplateController extends Controller
         $validated['section_order'] = is_array($decodedOrder) ? $decodedOrder : BillTemplate::DEFAULT_SECTION_ORDER;
 
         $toggleFields = [
-            'show_logo', 'show_customer', 'show_bill_number', 'show_date', 'show_sku',
+            'show_logo', 'show_customer', 'show_bill_number', 'show_date', 'show_sku', 'show_barcode',
             'show_quantity', 'show_unit', 'show_price', 'show_subtotal', 'show_discount',
             'show_cash_received', 'show_change', 'show_qr',
             'show_cashier', 'show_payment_method', 'calculate_vat',
