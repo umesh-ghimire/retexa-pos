@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BillTemplate;
 use App\Models\Customer;
+use App\Models\HeldBill;
 use App\Models\Product;
 use App\Models\Sale;
 use Illuminate\Http\Request;
@@ -25,6 +26,10 @@ class BillingController extends Controller
         ? asset('storage/' . $paymentQrPath)
         : null;
 
+    $shopLogoUrl = ($template && $template->show_logo && $template->logo_path)
+        ? asset('storage/' . $template->logo_path)
+        : null;
+
     $printerPaperWidthMm = (float) \App\Models\Setting::get(
         'printer_paper_width_mm',
         72
@@ -38,6 +43,7 @@ class BillingController extends Controller
         'template' => $template,
         'defaultDiscount' => \App\Models\Setting::get('default_discount', 0),
         'paymentQrUrl' => $paymentQrUrl,
+        'shopLogoUrl' => $shopLogoUrl,
         'printerVars' => $printerVars,
         'printerPaperWidthMm' => $printerPaperWidthMm,
         'isOwner' => auth()->user()->isOwner(),
@@ -244,5 +250,104 @@ class BillingController extends Controller
             });
 
         return response()->json($products);
+    }
+
+    /**
+     * List the current cashier's held bills, newest first, for the
+     * "Held Bills" panel on the billing screen.
+     */
+    public function heldBills()
+    {
+        $heldBills = HeldBill::where('held_by', Auth::id())
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($heldBill) {
+                $items = $heldBill->items ?? [];
+                $itemCount = count($items);
+                $subtotal = array_reduce($items, fn ($carry, $item) => $carry + (float) ($item['line_total'] ?? 0), 0);
+                $total = max($subtotal - (float) $heldBill->discount, 0);
+
+                return [
+                    'id' => $heldBill->id,
+                    'label' => $heldBill->label,
+                    'customer_name' => $heldBill->customer_name,
+                    'customer_phone' => $heldBill->customer_phone,
+                    'item_count' => $itemCount,
+                    'total' => $total,
+                    'held_at' => $heldBill->created_at->toIso8601String(),
+                ];
+            });
+
+        return response()->json($heldBills);
+    }
+
+    /**
+     * Put the current in-progress bill on hold so the cashier can
+     * start a fresh bill and come back to this one later.
+     */
+    public function holdBill(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:50'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.name' => ['required', 'string', 'max:255'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
+            'items.*.line_total' => ['required', 'numeric', 'min:0'],
+            'items.*.product_id' => ['nullable', 'exists:products,id'],
+            'items.*.unit_id' => ['nullable', 'exists:units,id'],
+            'items.*.unit_label' => ['nullable', 'string'],
+        ]);
+
+        $countSoFar = HeldBill::where('held_by', Auth::id())->count();
+
+        $heldBill = HeldBill::create([
+            'held_by' => Auth::id(),
+            'label' => 'Held Bill #' . ($countSoFar + 1),
+            'customer_name' => $validated['customer_name'] ?? null,
+            'customer_phone' => $validated['customer_phone'] ?? null,
+            'discount' => $validated['discount'] ?? 0,
+            'items' => $validated['items'],
+        ]);
+
+        return response()->json(['id' => $heldBill->id, 'label' => $heldBill->label]);
+    }
+
+    /**
+     * Restore a held bill back onto the billing screen and remove it
+     * from the held list.
+     */
+    public function restoreHeldBill(HeldBill $heldBill)
+    {
+        if ($heldBill->held_by !== Auth::id()) {
+            abort(403);
+        }
+
+        $data = [
+            'customer_name' => $heldBill->customer_name,
+            'customer_phone' => $heldBill->customer_phone,
+            'discount' => (float) $heldBill->discount,
+            'items' => $heldBill->items,
+        ];
+
+        $heldBill->delete();
+
+        return response()->json($data);
+    }
+
+    /**
+     * Discard a held bill without restoring it.
+     */
+    public function destroyHeldBill(HeldBill $heldBill)
+    {
+        if ($heldBill->held_by !== Auth::id()) {
+            abort(403);
+        }
+
+        $heldBill->delete();
+
+        return response()->json(['success' => true]);
     }
 }

@@ -28,6 +28,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/billing/checkout', [BillingController::class, 'store']);
     Route::post('/billing/lookup-barcode', [BillingController::class, 'lookupBarcode']);
     Route::get('/billing/search-products', [BillingController::class, 'searchProducts']);
+    Route::get('/billing/held-bills', [BillingController::class, 'heldBills']);
+    Route::post('/billing/hold', [BillingController::class, 'holdBill']);
+    Route::post('/billing/held-bills/{heldBill}/restore', [BillingController::class, 'restoreHeldBill']);
+    Route::delete('/billing/held-bills/{heldBill}', [BillingController::class, 'destroyHeldBill']);
 });
 
 Route::get('/inventory', function () {

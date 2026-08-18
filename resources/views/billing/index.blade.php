@@ -17,34 +17,86 @@
 @section('content')
 <div class="billing-page">
 
-    {{-- LEFT SIDE: Calculator --}}
+    {{-- LEFT SIDE: Smart Calculator --}}
     <div class="calculator-panel">
 
-        <div class="calculator-display">
-            <div class="display-mode" id="displayMode">NORMAL MODE</div>
-            <div class="display-value" id="displayValue">0</div>
+        <div class="smart-input-wrap">
+            <div class="smart-input-box" id="smartInputBox">
+                <input type="text" id="smartInput" placeholder="Enter product name / scan barcode" autocomplete="off">
+                <span class="smart-input-amount" id="smartInputAmount"></span>
+            </div>
+            <p class="smart-input-tip">
+                <span class="tip-icon">&#128161;</span>
+                <span id="smartInputTipText">Type product name or scan barcode and press ENTER.</span>
+            </p>
+
+            <div class="smart-suggestions" id="smartSuggestions"></div>
         </div>
 
-        <div class="calculator-buttons">
-            <button class="calc-btn calc-btn--product" data-action="product">PRODUCT</button>
-            <button class="calc-btn calc-btn--clear" data-action="clear">C</button>
-            <button class="calc-btn calc-btn--backspace" data-action="backspace">⌫</button>
+        <div class="calculator-buttons calculator-buttons--top">
+            <button type="button" class="calc-btn calc-btn--product" data-action="focus-input">
+                <span class="calc-btn-icon">+</span> PRODUCT
+                <small>F1</small>
+            </button>
+            <button type="button" class="calc-btn calc-btn--clear" data-action="clear">
+                C CLEAR
+            </button>
+            <button type="button" class="calc-btn calc-btn--backspace" data-action="backspace">
+                &#9003; BACKSPACE
+            </button>
+        </div>
 
-            <button class="calc-btn" data-key="7">7</button>
-            <button class="calc-btn" data-key="8">8</button>
-            <button class="calc-btn" data-key="9">9</button>
+        <div class="calculator-buttons calculator-buttons--pad">
+            <button type="button" class="calc-btn" data-key="7">7</button>
+            <button type="button" class="calc-btn" data-key="8">8</button>
+            <button type="button" class="calc-btn" data-key="9">9</button>
+            <button type="button" class="calc-btn calc-btn--op" data-key="&#215;">&#215;</button>
 
-            <button class="calc-btn" data-key="4">4</button>
-            <button class="calc-btn" data-key="5">5</button>
-            <button class="calc-btn" data-key="6">6</button>
+            <button type="button" class="calc-btn" data-key="4">4</button>
+            <button type="button" class="calc-btn" data-key="5">5</button>
+            <button type="button" class="calc-btn" data-key="6">6</button>
+            <button type="button" class="calc-btn calc-btn--op" data-key="&#8722;">&#8722;</button>
 
-            <button class="calc-btn" data-key="1">1</button>
-            <button class="calc-btn" data-key="2">2</button>
-            <button class="calc-btn" data-key="3">3</button>
+            <button type="button" class="calc-btn" data-key="1">1</button>
+            <button type="button" class="calc-btn" data-key="2">2</button>
+            <button type="button" class="calc-btn" data-key="3">3</button>
+            <button type="button" class="calc-btn calc-btn--op" data-key="+">+</button>
 
-            <button class="calc-btn" data-key="0">0</button>
-            <button class="calc-btn" data-key=".">.</button>
-            <button class="calc-btn calc-btn--enter" data-action="enter">ENTER</button>
+            <button type="button" class="calc-btn" data-key="0">0</button>
+            <button type="button" class="calc-btn" data-key=".">.</button>
+            <button type="button" class="calc-btn calc-btn--enter" data-action="enter">ENTER &#9166;</button>
+        </div>
+
+        <div class="calculator-quick-actions">
+            <button type="button" class="quick-action-btn" id="newBillBtn">
+                <span class="quick-action-icon quick-action-icon--new">&#128196;</span>
+                <span class="quick-action-label">New Bill</span>
+                <small>F2</small>
+            </button>
+            <button type="button" class="quick-action-btn" id="holdBillBtn">
+                <span class="quick-action-icon quick-action-icon--hold">&#10074;&#10074;</span>
+                <span class="quick-action-label">Hold Bill</span>
+                <small>F3</small>
+                <span class="held-bills-badge" id="heldBillsBadge" style="display:none;">0</span>
+            </button>
+            <a href="{{ url('/bill-history') }}" class="quick-action-btn" id="billHistoryLink">
+                <span class="quick-action-icon quick-action-icon--history">&#128203;</span>
+                <span class="quick-action-label">Bill History</span>
+                <small>F4</small>
+            </a>
+            @if ($isOwner)
+                <a href="{{ url('/admin/settings') }}" target="_blank" class="quick-action-btn" id="settingsLink">
+                    <span class="quick-action-icon quick-action-icon--settings">&#9881;</span>
+                    <span class="quick-action-label">Settings</span>
+                    <small>F5</small>
+                </a>
+            @else
+                <span class="quick-action-btn quick-action-btn--disabled" title="Owner access required">
+                    <span class="quick-action-icon quick-action-icon--settings">&#9881;</span>
+                    <span class="quick-action-label">Settings</span>
+                    <small>F5</small>
+                </span>
+            @endif
         </div>
 
         <div class="barcode-not-found-overlay" id="barcodeNotFoundOverlay" style="display:none;">
@@ -61,24 +113,78 @@
             </div>
         </div>
 
-        <div class="product-search-box" id="productSearchBox">
-            <div class="product-search-box__header">
-                <label for="productScanInput">Search or Scan Product</label>
-                <button type="button" class="product-search-close-btn" id="productSearchCloseBtn" aria-label="Close search">✕</button>
-            </div>
-            <input type="text" id="productScanInput" placeholder="Type a product name or scan a barcode..." autocomplete="off">
-            <div class="product-suggestions" id="productSuggestions"></div>
-        </div>
-
     </div>
 
-    {{-- RIGHT SIDE: Bill panel --}}
+    {{-- RIGHT SIDE: Current Bill --}}
     <div class="bill-panel">
 
         <div class="bill-header">
-            <h2 id="shopName">{{ $shopName }}</h2>
-            <p>Bill No: <span id="billNumber">New</span></p>
-            <p>Date: <span id="billDate"></span></p>
+            <div class="bill-header-shop">
+                <div class="bill-shop-logo">
+                    @if ($shopLogoUrl)
+                        <img src="{{ $shopLogoUrl }}" alt="{{ $shopName }}">
+                    @else
+                        <span>&#127978;</span>
+                    @endif
+                </div>
+                <div class="bill-shop-info">
+                    <h2 id="shopName">{{ $shopName }}</h2>
+                    @if ($template && $template->address)
+                        <p class="bill-shop-address">{{ $template->address }}</p>
+                    @endif
+                    @if ($template && $template->phone)
+                        <p class="bill-shop-phone">{{ $template->phone }}</p>
+                    @endif
+                    @if ($template && $template->vat_pan_number)
+                        <span class="bill-vat-pan">VAT/PAN No. {{ $template->vat_pan_number }}</span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="bill-header-meta-table">
+                <div class="bill-meta-row">
+                    <span class="meta-label">Bill No.</span>
+                    <span class="meta-colon">:</span>
+                    <b id="billNumber" class="meta-highlight">NEW</b>
+                </div>
+                <div class="bill-meta-row">
+                    <span class="meta-label">Date</span>
+                    <span class="meta-colon">:</span>
+                    <b id="billDate"></b>
+                </div>
+                <div class="bill-meta-row">
+                    <span class="meta-label">Time</span>
+                    <span class="meta-colon">:</span>
+                    <b id="billTime"></b>
+                </div>
+                <div class="bill-meta-row">
+                    <span class="meta-label">Cashier</span>
+                    <span class="meta-colon">:</span>
+                    <b id="cashierName">{{ auth()->user()->name }}</b>
+                </div>
+            </div>
+
+            <div class="bill-payment-qr">
+                <p class="bill-payment-qr-label">PAYMENT QR</p>
+                <div class="bill-payment-qr-box">
+                    @if ($paymentQrUrl)
+                        <img src="{{ $paymentQrUrl }}" alt="Payment QR">
+                    @else
+                        <span class="bill-payment-qr-placeholder">No QR set</span>
+                    @endif
+                </div>
+                <p class="bill-payment-qr-caption">Scan to Pay</p>
+                <label class="toggle-switch-row">
+                    <span class="toggle-switch-row-label">
+                        Show QR on Bill
+                        <span class="qr-help-icon" title="Controls whether the payment QR appears on this bill.">?</span>
+                    </span>
+                    <span class="toggle-switch">
+                        <input type="checkbox" id="showQrCheckbox" {{ (!$template || $template->show_qr) ? 'checked' : '' }}>
+                        <span class="toggle-switch-slider"></span>
+                    </span>
+                </label>
+            </div>
         </div>
 
         <div class="bill-customer">
@@ -86,8 +192,22 @@
             <input type="text" id="customerPhone" placeholder="Customer phone (optional)">
         </div>
 
-        <div class="bill-items" id="billItems">
-            <p class="empty-bill-message" id="emptyBillMessage">No items yet. Enter an amount and press ENTER.</p>
+        <div class="bill-items-table-wrap">
+            <div class="bill-items-header">
+                <span class="col-num">#</span>
+                <span class="col-name">ITEM NAME</span>
+                <span class="col-qty">QTY</span>
+                <span class="col-price">UNIT PRICE</span>
+                <span class="col-total">TOTAL</span>
+                <span class="col-action">ACTION</span>
+            </div>
+            <div class="bill-items" id="billItems">
+                <div class="empty-bill-message" id="emptyBillMessage">
+                    <div class="empty-bill-icon">&#128722;</div>
+                    <p>No items yet.</p>
+                    <p class="empty-bill-subtext">Add products to get started.</p>
+                </div>
+            </div>
         </div>
 
         <div class="bill-totals">
@@ -99,41 +219,97 @@
                 <span>Discount</span>
                 <input type="number" id="discountInput" value="{{ $defaultDiscount ?: 0 }}" min="0">
             </div>
+            <div class="total-row" id="vatRow" style="display:none;">
+                <span id="vatLabel">VAT</span>
+                <span id="vatValue">Rs. 0</span>
+            </div>
             <div class="total-row total-row--grand">
                 <span>TOTAL</span>
                 <span id="grandTotalValue">Rs. 0</span>
             </div>
-            <div class="total-row">
-                <span>Cash Received</span>
-                <input type="number" id="cashInput" value="0" min="0">
-            </div>
-            <div class="total-row">
-                <span>Change</span>
-                <span id="changeValue">Rs. 0</span>
-            </div>
-            <div class="total-row payment-method-row">
-                <span>Payment Method</span>
-                <span>
-                    <label><input type="radio" name="paymentMethod" value="cash" checked> Cash</label>
-                    <label><input type="radio" name="paymentMethod" value="qr"> QR</label>
-                    <label><input type="radio" name="paymentMethod" value="credit"> Credit</label>
-                </span>
-            </div>
-            <div class="total-row payment-method-row">
-                <span>Show QR on Receipt</span>
-                <span>
-                    <label><input type="checkbox" id="showQrCheckbox" {{ (!$template || $template->show_qr) ? 'checked' : '' }}> Show</label>
-                </span>
-            </div>
         </div>
 
         <div class="bill-action-buttons">
-            <button class="btn-new-bill" id="newBillBtn">New Bill</button>
-            <button class="btn-show-bill" id="showBillBtn">SHOW BILL</button>
+            <button type="button" class="btn-new-bill" id="newBillBtnBottom">+ New Bill</button>
+            <button type="button" class="btn-show-bill" id="showBillBtn">&#128424; SHOW BILL (F8)</button>
         </div>
 
     </div>
 
+</div>
+
+{{-- PAYMENT POPUP --}}
+<div class="payment-modal-overlay" id="paymentModalOverlay" style="display:none;">
+    <div class="payment-modal-box">
+        <div class="payment-modal-header">
+            <h3>PAYMENT</h3>
+            <button type="button" class="payment-modal-close" id="paymentModalCloseBtn">&#10005;</button>
+        </div>
+
+        <div class="payment-modal-total">
+            <span>TOTAL</span>
+            <b id="paymentModalTotal">Rs. 0</b>
+        </div>
+
+        <div class="payment-step" id="paymentStepMethod">
+            <button type="button" class="payment-method-btn payment-method-btn--cash" id="paymentMethodCashBtn">
+                <span>&#128181;</span> CASH
+            </button>
+            <button type="button" class="payment-method-btn payment-method-btn--qr" id="paymentMethodQrBtn">
+                <span>&#128241;</span> QR / ONLINE
+            </button>
+            <button type="button" class="payment-method-btn payment-method-btn--credit" id="paymentMethodCreditBtn">
+                <span>&#128179;</span> CREDIT
+            </button>
+            <button type="button" class="payment-modal-cancel" id="paymentModalCancelBtn">CANCEL</button>
+        </div>
+
+        <div class="payment-step" id="paymentStepCash" style="display:none;">
+            <label class="payment-field-label" for="cashReceivedInput">CASH RECEIVED</label>
+            <input type="text" inputmode="decimal" id="cashReceivedInput" class="payment-cash-input" placeholder="0" autocomplete="off">
+            <div class="payment-change-row">
+                <span id="cashChangeLabel">Change</span>
+                <b id="cashChangeValue">Rs. 0</b>
+            </div>
+            <button type="button" class="payment-complete-btn" id="completeCashBtn">COMPLETE SALE</button>
+            <button type="button" class="payment-back-btn" id="backFromCashBtn">&#8592; Back</button>
+        </div>
+
+        <div class="payment-step" id="paymentStepQr" style="display:none;">
+            <div class="payment-qr-display" id="paymentQrDisplay">
+                @if ($paymentQrUrl)
+                    <img src="{{ $paymentQrUrl }}" alt="Payment QR">
+                @else
+                    <p class="payment-qr-missing">No payment QR has been uploaded yet. Add one from Admin &rarr; Settings.</p>
+                @endif
+            </div>
+            <p class="payment-qr-caption">Have the customer scan to pay the full total.</p>
+            <button type="button" class="payment-complete-btn" id="completeQrBtn">COMPLETE SALE</button>
+            <button type="button" class="payment-back-btn" id="backFromQrBtn">&#8592; Back</button>
+        </div>
+
+        <div class="payment-step" id="paymentStepCredit" style="display:none;">
+            <p class="payment-credit-note">
+                This sale will be recorded as <b>credit / due</b> for
+                <b id="paymentCreditCustomerName">the customer</b>.
+                No cash is collected now.
+            </p>
+            <button type="button" class="payment-complete-btn" id="completeCreditBtn">COMPLETE SALE</button>
+            <button type="button" class="payment-back-btn" id="backFromCreditBtn">&#8592; Back</button>
+        </div>
+    </div>
+</div>
+
+{{-- HELD BILLS --}}
+<div class="held-bills-overlay" id="heldBillsOverlay" style="display:none;">
+    <div class="held-bills-box">
+        <div class="held-bills-header">
+            <h3>Held Bills</h3>
+            <button type="button" class="payment-modal-close" id="closeHeldBillsBtn">&#10005;</button>
+        </div>
+        <div class="held-bills-list" id="heldBillsList"></div>
+        <p class="held-bills-empty" id="heldBillsEmptyMessage" style="display:none;">No bills are on hold right now.</p>
+    </div>
 </div>
 
 <div class="receipt-overlay" id="receiptOverlay" style="display:none;">
