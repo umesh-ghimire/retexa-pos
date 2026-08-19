@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Test Print</title>
-    <link rel="stylesheet" href="{{ asset('css/billing.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/billing.css') }}?v={{ filemtime(public_path('css/billing.css')) }}">
     <style>
         :root {
             --print-paper-width: {{ $printerVars['width'] }};
@@ -57,14 +57,15 @@
     <script>
         const activeTemplate = @json($template);
         const sampleSale = @json($sampleSale);
+        const printerVars = @json($printerVars);
         const printerCopies = {{ $printerVars['copies'] }};
     </script>
-    <script src="{{ asset('js/receipt-renderer.js') }}"></script>
+    <script src="{{ asset('js/receipt-renderer.js') }}?v={{ filemtime(public_path('js/receipt-renderer.js')) }}"></script>
     <script>
         const tpl = activeTemplate || buildFallbackTemplate('Test Shop');
         const order = getSectionOrder(tpl);
         const container = document.getElementById('testReceiptContent');
-        applyReceiptContainerClasses(container, tpl, {{ $printerVars['width'] ? (float) rtrim($printerVars['width'], 'mm') : 72 }});
+        applyReceiptContainerClasses(container, tpl, printerVars);
         container.innerHTML = renderReceiptForTemplate(tpl, sampleSale, order);
 
         // Uses the exact same copies pattern as Billing and Admin

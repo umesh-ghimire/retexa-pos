@@ -374,6 +374,16 @@
                         <input type="password" class="form-control" id="userPasswordInput" name="password" minlength="6" required>
                         <small class="text-muted" id="userPasswordHint" style="display:none;">Leave blank to keep the current password.</small>
                     </div>
+                    <div class="form-group">
+                        <label for="userPinInput">Billing PIN (optional)</label>
+                        <input type="text" class="form-control" id="userPinInput" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4 digits">
+                        <small class="text-muted">Used for quick PIN login on the billing screen. Leave blank to keep the current PIN.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="userPinInput">Billing PIN (optional)</label>
+                        <input type="text" class="form-control" id="userPinInput" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="4 digits">
+                        <small class="text-muted">Used for quick PIN login on the billing screen. Leave blank to keep the current PIN.</small>
+                    </div>
                 </div>
 
                 <div class="modal-footer">

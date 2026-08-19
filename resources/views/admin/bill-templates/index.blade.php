@@ -3,7 +3,7 @@
 @section('title', 'Bill Designs')
 
 @section('styles')
-    <link rel="stylesheet" href="{{ asset('css/billing.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/billing.css') }}?v={{ filemtime(public_path('css/billing.css')) }}">
 @endsection
 
 @section('content')
@@ -18,7 +18,10 @@
         @endif
 
         <div class="alert alert-info" style="font-size:0.85rem;">
-            Paper width follows <a href="{{ route('admin.settings.index') }}">Printer Settings</a> — currently <strong>{{ $printerPaperWidthMm }}mm</strong>.
+            Paper width, alignment, font scale, margins, paper length, and copies all come from
+            <a href="{{ route('admin.settings.index') }}">Printer Settings</a> — currently
+            <strong>{{ $printerVars['width'] }}</strong>, <strong>{{ ucfirst($printerVars['alignment']) }}</strong> aligned.
+            Every Bill Design below automatically uses these same physical settings; only the content/layout differs per design.
         </div>
 
         <div class="card">
@@ -34,8 +37,6 @@
                         <thead>
                             <tr>
                                 <th>Name</th>
-                                <th>Font Size</th>
-                                <th>Alignment</th>
                                 <th>VAT</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -45,8 +46,6 @@
                             @forelse ($templates as $template)
                                 <tr>
                                     <td>{{ $template->name }}</td>
-                                    <td>{{ ucfirst($template->font_size) }}</td>
-                                    <td>{{ ucfirst($template->alignment) }}</td>
                                     <td>
                                         @if ($template->calculate_vat)
                                             <span class="badge badge-info">{{ $template->vat_percentage }}%</span>
@@ -92,13 +91,11 @@
                                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                             </form>
                                         @endunless
-
-                                        <a href="{{ route('admin.bill-templates.designer', $template) }}" class="btn btn-sm btn-light" style="opacity:0.7;" title="Experimental visual designer">Advanced Designer (Beta)</a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">No bill designs yet.</td>
+                                    <td colspan="4" class="text-center text-muted">No bill designs yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -208,6 +205,10 @@
                             <label class="custom-control-label" for="tplShowSkuInput">SKU</label>
                         </div>
                         <div class="custom-control custom-checkbox mb-2">
+                            <input type="checkbox" class="custom-control-input" id="tplShowBarcodeInput" name="show_barcode" value="1">
+                            <label class="custom-control-label" for="tplShowBarcodeInput">Barcode</label>
+                        </div>
+                        <div class="custom-control custom-checkbox mb-2">
                             <input type="checkbox" class="custom-control-input" id="tplShowQuantityInput" name="show_quantity" value="1" checked>
                             <label class="custom-control-label" for="tplShowQuantityInput">Quantity</label>
                         </div>
@@ -247,23 +248,7 @@
 
                     <h6 class="text-muted mt-2">Styling</h6>
                     <div class="row">
-                        <div class="col-md-4 form-group">
-                            <label>Font Size</label>
-                            <select class="form-control" id="tplFontSizeInput" name="font_size">
-                                <option value="small">Small</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="large">Large</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 form-group">
-                            <label>Alignment</label>
-                            <select class="form-control" id="tplAlignmentInput" name="alignment">
-                                <option value="left" selected>Left</option>
-                                <option value="center">Center</option>
-                                <option value="right">Right</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 form-group">
+                        <div class="col-md-6 form-group">
                             <label>Line Spacing</label>
                             <select class="form-control" id="tplLineSpacingInput" name="line_spacing">
                                 <option value="tight">Tight</option>
@@ -271,7 +256,7 @@
                                 <option value="relaxed">Relaxed</option>
                             </select>
                         </div>
-                        <div class="col-md-4 form-group">
+                        <div class="col-md-6 form-group">
                             <label>Section Spacing</label>
                             <select class="form-control" id="tplSectionSpacingInput" name="section_spacing">
                                 <option value="tight">Tight</option>
@@ -280,7 +265,14 @@
                             </select>
                         </div>
                     </div>
-                    <p class="text-muted" style="font-size:0.8rem;">Paper width is set globally in Printer Settings and applies automatically to every design.</p>
+
+                    <div class="alert alert-light border" style="font-size:0.82rem;">
+                        <strong>Paper width, alignment, font scale, margins, paper length &amp; copies</strong> are not set per
+                        design — they always come from <a href="{{ route('admin.settings.index') }}" target="_blank">Printer Settings</a>,
+                        currently: {{ $printerVars['width'] }} · {{ ucfirst($printerVars['alignment']) }} ·
+                        {{ $printerVars['font_size'] }} · {{ $printerVars['length'] }} length · {{ $printerVars['copies'] }} {{ Str::plural('copy', $printerVars['copies']) }}.
+                        Change them there and every design below updates automatically.
+                    </div>
 
                 </div>
 
@@ -315,9 +307,9 @@
 @section('scripts')
     <script>
         const latestSaleForPreview = @json($latestSale);
-        const printerPaperWidthMm = {{ $printerPaperWidthMm }};
+        const printerVars = @json($printerVars);
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
-    <script src="{{ asset('js/receipt-renderer.js') }}"></script>
-    <script src="{{ asset('admin-assets/js/admin-bill-templates.js') }}"></script>
+    <script src="{{ asset('js/receipt-renderer.js') }}?v={{ filemtime(public_path('js/receipt-renderer.js')) }}"></script>
+    <script src="{{ asset('admin-assets/js/admin-bill-templates.js') }}?v={{ filemtime(public_path('admin-assets/js/admin-bill-templates.js')) }}"></script>
 @endsection

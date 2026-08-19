@@ -43,12 +43,19 @@ class Setting extends Model
         $pageLengthMode = static::get('printer_page_length_mode', 'auto');
         $pageLengthMm = static::get('printer_page_length_mm', '200');
         $sizePreset = static::get('printer_size_preset', 'medium');
+        $alignment = static::get('printer_alignment', 'left');
+        $marginLeftMm = (float) static::get('printer_margin_left_mm', '0');
+        $marginRightMm = (float) static::get('printer_margin_right_mm', '0');
+
+        $printableWidthMm = max(10, $paperWidthMm - $marginLeftMm - $marginRightMm);
 
         // Font size is no longer a fixed number — it scales with the
-        // actual paper width, so a 48mm printer and a 100mm printer
-        // don't get identical text. The Print Size preset then nudges
-        // that width-based size up or down. Multipliers are tuned so
-        // 72mm + Medium still lands on the original PT210 default (21px).
+        // actual PRINTABLE width (paper width minus margins), so a
+        // 48mm printer and a 100mm printer don't get identical text,
+        // and adding margins doesn't silently overflow the page. The
+        // Print Size preset then nudges that width-based size up or
+        // down. Multipliers are tuned so 72mm + 0 margins + Medium
+        // still lands on the original PT210 default (21px).
         $multiplierMap = [
             'small' => 0.81,
             'medium' => 1.0,
@@ -62,8 +69,20 @@ class Setting extends Model
         $multiplier = $multiplierMap[$sizePreset] ?? $multiplierMap['medium'];
         $fontWeight = $weightMap[$sizePreset] ?? $weightMap['medium'];
 
-        $baseFontPx = $paperWidthMm * 0.29;
-        $fontPx = (int) round(max(12, min(34, $baseFontPx * $multiplier)));
+        $baseFontPx = $printableWidthMm * 0.29;
+        $autoFontPx = (int) round(max(12, min(34, $baseFontPx * $multiplier)));
+
+        // Centralized "Receipt Text Size" override. When the user has
+        // explicitly set a value (Printer Settings), it wins outright
+        // and every consumer (Test Print, /billing, /admin/bills) uses
+        // exactly that pixel size — no separate calculation per page.
+        // Until it's set, behavior is unchanged: falls back to the
+        // existing width-based auto calculation above (still 21px for
+        // the default 72mm / 0 margins / Medium configuration).
+        $explicitFontPx = static::get('printer_font_size_px', null);
+        $fontPx = ($explicitFontPx !== null && $explicitFontPx !== '')
+            ? (int) round(max(10, min(40, (float) $explicitFontPx)))
+            : $autoFontPx;
 
         // "Auto / Continuous" lets the thermal printer cut after the
         // content ends instead of forcing a fixed page length.
@@ -71,8 +90,12 @@ class Setting extends Model
 
         return [
             'width' => $paperWidthMm . 'mm',
+            'printable_width' => $printableWidthMm . 'mm',
             'length' => $length,
             'length_mode' => $pageLengthMode,
+            'alignment' => in_array($alignment, ['left', 'center', 'right'], true) ? $alignment : 'left',
+            'margin_left' => $marginLeftMm . 'mm',
+            'margin_right' => $marginRightMm . 'mm',
             'font_size' => $fontPx . 'px',
             'font_weight' => $fontWeight,
             'copies' => (int) static::get('printer_copies', 1),

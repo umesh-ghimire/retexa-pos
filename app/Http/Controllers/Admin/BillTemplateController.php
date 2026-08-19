@@ -18,9 +18,9 @@ class BillTemplateController extends Controller
     {
         $templates = BillTemplate::orderByDesc('is_default')->orderBy('name')->get();
         $latestSale = \App\Models\Sale::with(['items.product', 'items.unit', 'customer', 'createdBy'])->latest()->first();
-        $printerPaperWidthMm = (float) \App\Models\Setting::get('printer_paper_width_mm', 72);
+        $printerVars = \App\Models\Setting::printerCssVars();
 
-        return view('admin.bill-templates.index', compact('templates', 'latestSale', 'printerPaperWidthMm'));
+        return view('admin.bill-templates.index', compact('templates', 'latestSale', 'printerVars'));
     }
 
     /**
@@ -120,8 +120,6 @@ class BillTemplateController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:bill_templates,name,' . $templateId],
-            'font_size' => ['required', 'in:small,medium,large'],
-            'alignment' => ['required', 'in:left,center,right'],
             'shop_name' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
@@ -150,37 +148,5 @@ class BillTemplateController extends Controller
         }
 
         return $validated;
-    }
-
-    /**
-     * Full-page visual designer for a bill template.
-     */
-    public function designer(BillTemplate $billTemplate)
-    {
-        $latestSale = \App\Models\Sale::with(['items.product', 'items.unit', 'customer'])->latest()->first();
-        $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
-        $paymentQrUrl = $paymentQrPath ? asset('storage/' . $paymentQrPath) : null;
-        $printerPaperWidthMm = (float) \App\Models\Setting::get('printer_paper_width_mm', 72);
-
-        return view('admin.bill-templates.designer', [
-            'template' => $billTemplate,
-            'latestSale' => $latestSale,
-            'paymentQrUrl' => $paymentQrUrl,
-            'printerPaperWidthMm' => $printerPaperWidthMm,
-        ]);
-    }
-
-    /**
-     * Save the canvas layout (elements + paper width) for a template.
-     */
-    public function saveLayout(Request $request, BillTemplate $billTemplate)
-    {
-        $validated = $request->validate([
-            'canvas_layout' => ['required', 'array'],
-        ]);
-
-        $billTemplate->update(['canvas_layout' => $validated['canvas_layout']]);
-
-        return response()->json(['message' => 'Saved successfully.']);
     }
 }

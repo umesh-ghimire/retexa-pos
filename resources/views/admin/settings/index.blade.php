@@ -351,12 +351,38 @@
                                 <div class="set-field" style="margin-bottom:16px;">
                                     <label>Paper Width</label>
                                     <div class="set-suffix">
-                                        <input type="number" step="1" min="20" max="200" class="form-control"
+                                        <input type="number" step="0.1" min="20" max="200" class="form-control"
                                                name="printer_paper_width_mm" id="printerPaperWidthInput"
                                                value="{{ old('printer_paper_width_mm', $settings['printer_paper_width_mm'] ?? 72) }}">
                                         <span>mm</span>
                                     </div>
-                                    <small class="set-hint">Common: 48mm, 58mm, 72mm, 80mm. The PT210 default is 72mm.</small>
+                                    <small class="set-hint">Common: 48mm, 58mm, 72mm, 80mm. Decimals are fine (e.g. 73.5mm).</small>
+                                </div>
+
+                                <div class="set-field" style="margin-bottom:16px;">
+                                    <label>Text Alignment</label>
+                                    <select class="form-control" name="printer_alignment">
+                                        <option value="left" {{ old('printer_alignment', $settings['printer_alignment'] ?? 'left') == 'left' ? 'selected' : '' }}>Left</option>
+                                        <option value="center" {{ old('printer_alignment', $settings['printer_alignment'] ?? 'left') == 'center' ? 'selected' : '' }}>Center</option>
+                                        <option value="right" {{ old('printer_alignment', $settings['printer_alignment'] ?? 'left') == 'right' ? 'selected' : '' }}>Right</option>
+                                    </select>
+                                </div>
+
+                                <div class="set-field" style="margin-bottom:16px;">
+                                    <label>Margins</label>
+                                    <div class="set-margins-grid" style="grid-template-columns:1fr 1fr;">
+                                        <div class="set-suffix">
+                                            <input type="number" step="0.5" min="0" max="30" class="form-control" name="printer_margin_left_mm" placeholder="Left"
+                                                   value="{{ old('printer_margin_left_mm', $settings['printer_margin_left_mm'] ?? 0) }}">
+                                            <span>mm</span>
+                                        </div>
+                                        <div class="set-suffix">
+                                            <input type="number" step="0.5" min="0" max="30" class="form-control" name="printer_margin_right_mm" placeholder="Right"
+                                                   value="{{ old('printer_margin_right_mm', $settings['printer_margin_right_mm'] ?? 0) }}">
+                                            <span>mm</span>
+                                        </div>
+                                    </div>
+                                    <small class="set-hint">Left/Right unprintable margins. Reduces the printable width, which also scales the font size down slightly.</small>
                                 </div>
 
                                 <div class="set-field" style="margin-bottom:16px;">
@@ -392,12 +418,24 @@
                                     <small class="set-hint">Adjusts the content size on the real printed receipt.</small>
                                 </div>
 
+                                <div class="set-field" style="margin-bottom:16px;">
+    <label>Receipt Text Size</label>
+    <div class="set-suffix">
+        <input type="number" step="1" min="10" max="40" class="form-control"
+               name="printer_font_size_px" id="printerFontSizeInput"
+               value="{{ old('printer_font_size_px', $settings['printer_font_size_px'] ?? (int) $printerVars['font_size']) }}">
+        <span>px</span>
+    </div>
+    <small class="set-hint">The single text size used everywhere a receipt prints — Test Print, Billing, and Admin Bill History always match this exact value.</small>
+</div>
+
                                 <div class="set-field">
                                     <label>Receipt Copies</label>
                                     <input type="number" class="form-control" name="printer_copies" min="1" max="5" style="max-width:120px;"
                                            value="{{ old('printer_copies', $settings['printer_copies'] ?? 1) }}">
-                                    <small class="set-hint">Same copies behavior in Billing, Admin reprint, and Test Print.</small>
+                                    <small class="set-hint">Same copies behavior in Billing, Admin reprint, Test Print, and Bill Designs.</small>
                                 </div>
+
 
                                 <a href="{{ route('admin.settings.testPrint') }}" target="_blank" class="set-btn-primary-outline">
                                     <i class="fas fa-print"></i> Test Print Receipt
@@ -423,9 +461,13 @@
                                 <h6>Printer Information</h6>
                                 <div class="set-subcard-desc">Current saved values, computed the same way your real receipts are.</div>
                                 <div class="set-info-row"><span>Paper Width</span><span>{{ $printerVars['width'] }}</span></div>
+                                <div class="set-info-row"><span>Printable Width</span><span>{{ $printerVars['printable_width'] }}</span></div>
+                                <div class="set-info-row"><span>Alignment</span><span>{{ ucfirst($printerVars['alignment']) }}</span></div>
+                                <div class="set-info-row"><span>Margins (L/R)</span><span>{{ $printerVars['margin_left'] }} / {{ $printerVars['margin_right'] }}</span></div>
                                 <div class="set-info-row"><span>Paper Length</span><span>{{ $printerVars['length'] }}</span></div>
                                 <div class="set-info-row"><span>Font Size</span><span>{{ $printerVars['font_size'] }}</span></div>
                                 <div class="set-info-row"><span>Copies</span><span>{{ $printerVars['copies'] }}</span></div>
+                                <div class="set-info-row"><span>Applies to</span><span>All Bill Designs</span></div>
                             </div>
                         </div>
                     </div>

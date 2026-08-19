@@ -268,159 +268,45 @@ function buildFallbackTemplate(shopName) {
 }
 
 /**
- * Applies paper width / font size / alignment classes to a
- * receipt container, matching the given design's settings.
+ * Sizes and styles a receipt container using the current PRINTER
+ * SETTINGS (paper width, alignment, font scale, margins) — never
+ * the Bill Design's own fields. This is what keeps the Bill Design
+ * preview, Test Print, /billing, and Admin Reprint always showing
+ * the exact same physical layout: one printer configuration, many
+ * possible content designs.
+ *
+ * `printerVars` matches the shape of Setting::printerCssVars():
+ * { width, font_size, font_weight, alignment, margin_left, margin_right }
  */
-function applyReceiptContainerClasses(containerEl, tpl, paperWidthMm) {
+function applyReceiptContainerClasses(containerEl, tpl, printerVars) {
+    const vars = printerVars || {};
     containerEl.className = 'receipt-content';
-    containerEl.classList.add('font-' + (tpl.font_size || 'medium'));
-    containerEl.classList.add('align-' + (tpl.alignment || 'left'));
     containerEl.classList.add('spacing-line-' + (tpl.line_spacing || 'normal'));
     containerEl.classList.add('spacing-section-' + (tpl.section_spacing || 'normal'));
 
-    const width = paperWidthMm || (tpl.paper_width === '58mm' ? 58 : 80);
-    containerEl.style.width = width + 'mm';
-    containerEl.style.maxWidth = width + 'mm';
+    containerEl.style.width = vars.width || '72mm';
+    containerEl.style.maxWidth = vars.width || '72mm';
+    containerEl.style.boxSizing = 'border-box';
+    containerEl.style.fontFamily = 'Arial, Helvetica, sans-serif';
+    containerEl.style.fontSize = vars.font_size || '21px';
+    containerEl.style.fontWeight = vars.font_weight || '800';
+    containerEl.style.textAlign = vars.alignment || 'left';
+    containerEl.style.paddingLeft = vars.margin_left || '3mm';
+    containerEl.style.paddingRight = vars.margin_right || '3mm';
+    containerEl.style.paddingTop = '2mm';
+    containerEl.style.paddingBottom = '2mm';
 }
 
-
-/* ============================================
-   CANVAS-BASED BILL DESIGNS (freeform layout)
-   ============================================ */
-
-function resolveDynamicToken(token, tpl, sale) {
-    const parts = (sale.created_at || '').split('T');
-    const datePart = parts[0] || sale.date || '';
-    const timePart = parts[1] ? parts[1].substring(0, 5) : '';
-    const customerName = sale.customer ? sale.customer.name : (sale.customer_name || 'Walk-in');
-
-    const map = {
-        shop_name: tpl.shop_name || 'Shop Name',
-        shop_address: tpl.address || '',
-        shop_phone: tpl.phone || '',
-        bill_number: sale.bill_number || '',
-        date: datePart,
-        time: timePart,
-        customer: customerName,
-        cashier: sale.cashier_name || 'Admin',
-        subtotal: formatCurrency(sale.subtotal),
-        discount: formatCurrency(sale.discount),
-        total: formatCurrency(sale.total),
-        payment_method: (sale.payment_method || 'cash').toUpperCase(),
-        cash_received: formatCurrency(sale.cash_received),
-        change: formatCurrency(sale.change_amount),
-    };
-
-    return map.hasOwnProperty(token) ? map[token] : '';
-}
-
-function replaceDynamicTokens(text, tpl, sale) {
-    return (text || '').replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (match, token) => {
-        return resolveDynamicToken(token.toLowerCase(), tpl, sale);
-    });
-}
-
-function renderCanvasElementContent(el, tpl, sale) {
-    switch (el.type) {
-        case 'text':
-        case 'dynamic_field': {
-            const text = replaceDynamicTokens(el.content || '', tpl, sale);
-            const align = el.align || 'left';
-            const weight = el.bold ? '700' : '400';
-            const fontSize = (el.font_size || 12) + 'px';
-            return `<div style="width:100%; height:100%; text-align:${align}; font-weight:${weight}; font-size:${fontSize}; white-space:pre-wrap; line-height:1.3; overflow:hidden;">${text}</div>`;
-        }
-        case 'logo':
-            return tpl.logo_path ? `<img src="${resolveLogoSrc(tpl.logo_path)}" style="width:100%; height:100%; object-fit:contain;">` : '';
-        case 'image':
-            return el.src ? `<img src="${el.src}" style="width:100%; height:100%; object-fit:contain;">` : '';
-        case 'line': {
-            const thickness = el.thickness || 1;
-            return `<div style="width:100%; border-top:${thickness}px ${el.style || 'solid'} #000; margin-top:${(el.height || 2) / 2}mm;"></div>`;
-        }
-        case 'rectangle': {
-            const border = el.border_width ? `${el.border_width}px solid ${el.border_color || '#000'}` : 'none';
-            return `<div style="width:100%; height:100%; border:${border}; background:${el.fill || 'transparent'}; border-radius:${el.radius || 0}px; box-sizing:border-box;"></div>`;
-        }
-        case 'spacer':
-            return '';
-        case 'qr': {
-            const hasRealQr = typeof paymentQrImageUrl !== 'undefined' && paymentQrImageUrl;
-            return hasRealQr
-                ? `<img src="${paymentQrImageUrl}" style="width:100%; height:100%; object-fit:contain;">`
-                : `<div class="receipt-qr-placeholder" style="width:100%; height:100%; margin:0;"></div>`;
-        }
-        case 'barcode':
-            return `<svg class="canvas-barcode-svg" data-value="${sale.bill_number || ''}" style="width:100%; height:100%;"></svg>`;
-        case 'table_items': {
-            let rows = '';
-            (sale.items || []).forEach((item) => {
-                const name = item.item_name || item.name;
-                const qty = item.quantity !== undefined ? parseFloat(item.quantity) : '';
-                rows += `<tr>
-                    <td style="text-align:left; padding:2px 4px;">${name}</td>
-                    <td style="text-align:right; padding:2px 4px;">${qty}</td>
-                    <td style="text-align:right; padding:2px 4px;">${formatCurrency(item.unit_price).replace('Rs. ', '')}</td>
-                    <td style="text-align:right; padding:2px 4px;">${formatCurrency(item.line_total).replace('Rs. ', '')}</td>
-                </tr>`;
-            });
-            return `<table style="width:100%; border-collapse:collapse; font-size:${(el.font_size || 11)}px;">
-                <thead><tr style="border-bottom:1.5px solid #000; font-weight:700;">
-                    <td style="text-align:left; padding:2px 4px;">Item</td>
-                    <td style="text-align:right; padding:2px 4px;">Qty</td>
-                    <td style="text-align:right; padding:2px 4px;">Price</td>
-                    <td style="text-align:right; padding:2px 4px;">Total</td>
-                </tr></thead>
-                <tbody>${rows}</tbody>
-            </table>`;
-        }
-        default:
-            return '';
-    }
-}
-
-function renderCanvasElementHtml(el, tpl, sale) {
-    if (el.visible === false) return '';
-    const inner = renderCanvasElementContent(el, tpl, sale);
-    const style = `position:absolute; left:${el.x}mm; top:${el.y}mm; width:${el.width}mm; ${el.height ? 'height:' + el.height + 'mm;' : ''}`;
-    return `<div style="${style}">${inner}</div>`;
-}
-
-function buildReceiptFromCanvasLayout(tpl, sale) {
-    const layout = tpl.canvas_layout;
-    if (!layout || !layout.elements) return '';
-
-    const visibleElements = layout.elements.filter((el) => el.visible !== false);
-    const maxBottom = visibleElements.reduce((max, el) => Math.max(max, (el.y || 0) + (el.height || 8)), 0);
-
-    const elementsHtml = visibleElements
-        .map((el) => renderCanvasElementHtml(el, tpl, sale))
-        .join('');
-
-    return `<div class="canvas-receipt-wrapper" style="position:relative; width:100%; height:${maxBottom + 5}mm;">${elementsHtml}</div>`;
-}
 
 /**
  * Single entry point for rendering any receipt. Every consumer
- * (Designer preview, /billing, /admin/bills, Test Print) calls
- * this instead of buildReceiptHtml() directly, so the renderer
- * automatically picks canvas-based or toggle-based per template.
+ * (Bill Design preview, /billing, /admin/bills, Test Print) calls
+ * this — always the simple, section-based renderer. There is no
+ * canvas/freeform layout system anymore.
  */
 function renderReceiptForTemplate(tpl, sale, order) {
-    if (tpl && tpl.canvas_layout && tpl.canvas_layout.elements && tpl.canvas_layout.elements.length > 0) {
-        const html = buildReceiptFromCanvasLayout(tpl, sale);
-        setTimeout(() => {
-            document.querySelectorAll('.canvas-barcode-svg').forEach((svg) => {
-                const value = svg.getAttribute('data-value');
-                if (value && typeof JsBarcode !== 'undefined') {
-                    JsBarcode(svg, value, { format: 'CODE128', displayValue: true, fontSize: 10, height: 30, margin: 2 });
-                }
-            });
-        }, 0);
-        return html;
-    }
-
     const html = buildReceiptHtml(tpl, sale, order || getSectionOrder(tpl));
+
     if (tpl && tpl.show_barcode) {
         setTimeout(() => {
             document.querySelectorAll('.canvas-barcode-svg').forEach((svg) => {
@@ -431,5 +317,6 @@ function renderReceiptForTemplate(tpl, sale, order) {
             });
         }, 0);
     }
+
     return html;
 }

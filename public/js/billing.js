@@ -1123,7 +1123,7 @@ function renderReceipt(sale) {
     const tpl = resolveEffectiveTemplate(activeTemplate, sale, shopNameEl.textContent);
     const order = getSectionOrder(tpl);
 
-    applyReceiptContainerClasses(receiptContentEl, tpl, printerPaperWidthMm);
+    applyReceiptContainerClasses(receiptContentEl, tpl, printerVars);
     receiptContentEl.innerHTML = renderReceiptForTemplate(tpl, sale, order);
 }
 

@@ -15,6 +15,8 @@ function openAddUserModal() {
     document.getElementById('userPasswordHint').style.display = 'none';
     document.getElementById('userPasswordLabel').textContent = 'Password';
 
+    document.getElementById('userPinInput').value = '';
+
     $('#userModal').modal('show');
 }
 
@@ -34,6 +36,8 @@ function openEditUserModal(updateUrl, name, email, role) {
 
     document.getElementById('userPasswordHint').style.display = 'block';
     document.getElementById('userPasswordLabel').textContent = 'New Password (optional)';
+
+    document.getElementById('userPinInput').value = '';
 
     $('#userModal').modal('show');
 }

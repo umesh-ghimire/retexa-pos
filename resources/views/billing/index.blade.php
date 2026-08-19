@@ -3,7 +3,7 @@
 @section('title', 'Billing - Smart Retail POS')
 
 @section('styles')
-    <link rel="stylesheet" href="{{ asset('css/billing.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/billing.css') }}?v={{ filemtime(public_path('css/billing.css')) }}">
     <style>
         :root {
             --print-paper-width: {{ $printerVars['width'] }};
@@ -101,7 +101,9 @@
 
         <div class="barcode-not-found-overlay" id="barcodeNotFoundOverlay" style="display:none;">
             <div class="barcode-not-found-box">
+                <div class="popup-icon-badge popup-icon-badge--danger">&#10005;</div>
                 <p class="barcode-not-found-title">Barcode not found</p>
+                <p class="barcode-not-found-subtitle">We couldn't match this code to a product in inventory.</p>
                 <p class="barcode-not-found-code" id="barcodeNotFoundCode"></p>
                 <div class="barcode-not-found-actions">
                     @if ($isOwner)
@@ -241,41 +243,67 @@
 {{-- PAYMENT POPUP --}}
 <div class="payment-modal-overlay" id="paymentModalOverlay" style="display:none;">
     <div class="payment-modal-box">
-        <div class="payment-modal-header">
-            <h3>PAYMENT</h3>
-            <button type="button" class="payment-modal-close" id="paymentModalCloseBtn">&#10005;</button>
-        </div>
+        <button type="button" class="payment-modal-close" id="paymentModalCloseBtn">&#10005;</button>
 
         <div class="payment-modal-total">
-            <span>TOTAL</span>
+            <span>Total Due</span>
             <b id="paymentModalTotal">Rs. 0</b>
         </div>
 
         <div class="payment-step" id="paymentStepMethod">
-            <button type="button" class="payment-method-btn payment-method-btn--cash" id="paymentMethodCashBtn">
-                <span>&#128181;</span> CASH
+            <p class="payment-step-intro">Choose a payment method</p>
+
+            <button type="button" class="payment-option-row" id="paymentMethodCashBtn">
+                <span class="payment-option-icon payment-option-icon--cash">&#128181;</span>
+                <span class="payment-option-text">
+                    <span class="payment-option-title">Cash</span>
+                    <span class="payment-option-subtitle">Customer pays with physical cash</span>
+                </span>
+                <span class="payment-option-chevron">&#8250;</span>
             </button>
-            <button type="button" class="payment-method-btn payment-method-btn--qr" id="paymentMethodQrBtn">
-                <span>&#128241;</span> QR / ONLINE
+
+            <button type="button" class="payment-option-row" id="paymentMethodQrBtn">
+                <span class="payment-option-icon payment-option-icon--qr">&#128241;</span>
+                <span class="payment-option-text">
+                    <span class="payment-option-title">QR / Online</span>
+                    <span class="payment-option-subtitle">Scan to pay the full amount</span>
+                </span>
+                <span class="payment-option-chevron">&#8250;</span>
             </button>
-            <button type="button" class="payment-method-btn payment-method-btn--credit" id="paymentMethodCreditBtn">
-                <span>&#128179;</span> CREDIT
+
+            <button type="button" class="payment-option-row" id="paymentMethodCreditBtn">
+                <span class="payment-option-icon payment-option-icon--credit">&#128179;</span>
+                <span class="payment-option-text">
+                    <span class="payment-option-title">Credit</span>
+                    <span class="payment-option-subtitle">Recorded as due, no cash collected</span>
+                </span>
+                <span class="payment-option-chevron">&#8250;</span>
             </button>
-            <button type="button" class="payment-modal-cancel" id="paymentModalCancelBtn">CANCEL</button>
+
+            <button type="button" class="payment-modal-cancel" id="paymentModalCancelBtn">Cancel</button>
         </div>
 
         <div class="payment-step" id="paymentStepCash" style="display:none;">
-            <label class="payment-field-label" for="cashReceivedInput">CASH RECEIVED</label>
+            <div class="payment-step-header">
+                <button type="button" class="payment-step-back" id="backFromCashBtn" aria-label="Back">&#8592;</button>
+                <span class="payment-step-title">Cash Payment</span>
+            </div>
+
+            <label class="payment-field-label" for="cashReceivedInput">Cash received</label>
             <input type="text" inputmode="decimal" id="cashReceivedInput" class="payment-cash-input" placeholder="0" autocomplete="off">
             <div class="payment-change-row">
                 <span id="cashChangeLabel">Change</span>
                 <b id="cashChangeValue">Rs. 0</b>
             </div>
-            <button type="button" class="payment-complete-btn" id="completeCashBtn">COMPLETE SALE</button>
-            <button type="button" class="payment-back-btn" id="backFromCashBtn">&#8592; Back</button>
+            <button type="button" class="payment-complete-btn" id="completeCashBtn">Complete Sale</button>
         </div>
 
         <div class="payment-step" id="paymentStepQr" style="display:none;">
+            <div class="payment-step-header">
+                <button type="button" class="payment-step-back" id="backFromQrBtn" aria-label="Back">&#8592;</button>
+                <span class="payment-step-title">QR / Online Payment</span>
+            </div>
+
             <div class="payment-qr-display" id="paymentQrDisplay">
                 @if ($paymentQrUrl)
                     <img src="{{ $paymentQrUrl }}" alt="Payment QR">
@@ -284,18 +312,21 @@
                 @endif
             </div>
             <p class="payment-qr-caption">Have the customer scan to pay the full total.</p>
-            <button type="button" class="payment-complete-btn" id="completeQrBtn">COMPLETE SALE</button>
-            <button type="button" class="payment-back-btn" id="backFromQrBtn">&#8592; Back</button>
+            <button type="button" class="payment-complete-btn" id="completeQrBtn">Complete Sale</button>
         </div>
 
         <div class="payment-step" id="paymentStepCredit" style="display:none;">
+            <div class="payment-step-header">
+                <button type="button" class="payment-step-back" id="backFromCreditBtn" aria-label="Back">&#8592;</button>
+                <span class="payment-step-title">Credit Sale</span>
+            </div>
+
             <p class="payment-credit-note">
                 This sale will be recorded as <b>credit / due</b> for
                 <b id="paymentCreditCustomerName">the customer</b>.
                 No cash is collected now.
             </p>
-            <button type="button" class="payment-complete-btn" id="completeCreditBtn">COMPLETE SALE</button>
-            <button type="button" class="payment-back-btn" id="backFromCreditBtn">&#8592; Back</button>
+            <button type="button" class="payment-complete-btn" id="completeCreditBtn">Complete Sale</button>
         </div>
     </div>
 </div>
@@ -303,9 +334,13 @@
 {{-- HELD BILLS --}}
 <div class="held-bills-overlay" id="heldBillsOverlay" style="display:none;">
     <div class="held-bills-box">
+        <button type="button" class="payment-modal-close" id="closeHeldBillsBtn">&#10005;</button>
         <div class="held-bills-header">
-            <h3>Held Bills</h3>
-            <button type="button" class="payment-modal-close" id="closeHeldBillsBtn">&#10005;</button>
+            <span class="popup-icon-badge popup-icon-badge--hold">&#10074;&#10074;</span>
+            <div>
+                <h3>Held Bills</h3>
+                <p class="held-bills-subtitle">Pick a bill up where you left off</p>
+            </div>
         </div>
         <div class="held-bills-list" id="heldBillsList"></div>
         <p class="held-bills-empty" id="heldBillsEmptyMessage" style="display:none;">No bills are on hold right now.</p>
@@ -330,9 +365,10 @@
         const paymentQrImageUrl = @json($paymentQrUrl);
         const defaultShowQr = @json(!$template || $template->show_qr);
         const printerPaperWidthMm = {{ $printerPaperWidthMm }};
+        const printerVars = @json($printerVars);
         const printerCopies = {{ $printerVars['copies'] }};
     </script>
-    <script src="{{ asset('js/receipt-renderer.js') }}"></script>
+    <script src="{{ asset('js/receipt-renderer.js') }}?v={{ filemtime(public_path('js/receipt-renderer.js')) }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
-    <script src="{{ asset('js/billing.js') }}"></script>
+    <script src="{{ asset('js/billing.js') }}?v={{ filemtime(public_path('js/billing.js')) }}"></script>
 @endsection

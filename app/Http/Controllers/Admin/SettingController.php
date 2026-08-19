@@ -21,9 +21,13 @@ class SettingController extends Controller
         'payment_qr_path',
         // Receipt printer
         'printer_paper_width_mm',
+        'printer_alignment',
+        'printer_margin_left_mm',
+        'printer_margin_right_mm',
         'printer_page_length_mode',
         'printer_page_length_mm',
         'printer_size_preset',
+        'printer_font_size_px',
         'printer_copies',
         // Label printer
         'label_width_mm',
@@ -105,6 +109,9 @@ class SettingController extends Controller
 
             // Receipt printer — free numeric mm entry, printer-independent
             'printer_paper_width_mm' => ['nullable', 'numeric', 'min:20', 'max:200'],
+            'printer_alignment' => ['nullable', 'in:left,center,right'],
+            'printer_margin_left_mm' => ['nullable', 'numeric', 'min:0', 'max:30'],
+            'printer_margin_right_mm' => ['nullable', 'numeric', 'min:0', 'max:30'],
             'printer_page_length_mode' => ['nullable', 'in:auto,custom'],
             'printer_page_length_mm' => ['nullable', 'numeric', 'min:20', 'max:500', 'required_if:printer_page_length_mode,custom'],
             'printer_size_preset' => ['nullable', 'in:small,medium,large'],

@@ -1,5 +1,5 @@
 const templateToggleFields = [
-    'show_logo', 'show_customer', 'show_cashier', 'show_bill_number', 'show_date', 'show_sku',
+    'show_logo', 'show_customer', 'show_cashier', 'show_bill_number', 'show_date', 'show_sku', 'show_barcode',
     'show_quantity', 'show_unit', 'show_price', 'show_subtotal', 'show_discount',
     'show_payment_method', 'show_cash_received', 'show_change', 'show_qr', 'calculate_vat',
 ];
@@ -58,8 +58,6 @@ function openEditTemplateModal(template) {
     document.getElementById('tplHeaderTextInput').value = template.header_text ?? '';
     document.getElementById('tplFooterTextInput').value = template.footer_text ?? '';
     document.getElementById('tplVatPercentageInput').value = template.vat_percentage ?? 13;
-    document.getElementById('tplFontSizeInput').value = template.font_size ?? 'medium';
-    document.getElementById('tplAlignmentInput').value = template.alignment ?? 'left';
     document.getElementById('tplLineSpacingInput').value = template.line_spacing ?? 'normal';
     document.getElementById('tplSectionSpacingInput').value = template.section_spacing ?? 'normal';
 
@@ -90,7 +88,7 @@ function openPreviewModal(template) {
     const order = getSectionOrder(template);
 
     const container = document.getElementById('previewReceiptContent');
-    applyReceiptContainerClasses(container, template, printerPaperWidthMm);
+    applyReceiptContainerClasses(container, template, printerVars);
     container.classList.add('designer-paper');
 
     let html = '';

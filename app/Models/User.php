@@ -22,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'pin',
         'role',
         'status',
      ];
@@ -33,6 +34,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'pin',
         'remember_token',
     ];
 
@@ -46,6 +48,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'pin' => 'hashed',
         ];
     }
 
@@ -67,5 +70,10 @@ class User extends Authenticatable
     public function isDisabled(): bool
     {
         return $this->status === 'disabled';
+    }
+
+    public function hasPin(): bool
+    {
+        return ! empty($this->pin);
     }
 }

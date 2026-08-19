@@ -930,6 +930,35 @@
     .receipt-actions {
         display: none;
     }
+
+    /* Admin Reprint uses a Bootstrap modal to hold the receipt.
+       .modal has position:fixed by default, which creates its own
+       containing block for .receipt-content's position:absolute —
+       reset it the same way the /billing overlay is reset above,
+       so both print paths behave identically. */
+    #billModal, #billModal .modal-dialog, #billModal .modal-content, #billModal .modal-body {
+        position: static !important;
+        display: block !important;
+        max-width: 100% !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: none !important;
+        transform: none !important;
+        overflow: visible !important;
+    }
+    #billModal .modal-header, #billModal .modal-footer {
+        display: none !important;
+
+        body {
+        min-width: 0 !important;
+    }
+    .container {
+        min-width: 0 !important;
+    }
+    }
 }
 
 /* ---------- PAYMENT POPUP ---------- */
@@ -940,7 +969,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(17, 24, 39, 0.6);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -949,112 +980,147 @@
 }
 
 .payment-modal-box {
+    position: relative;
     background: #ffffff;
-    border-radius: var(--radius);
+    border-radius: 20px;
     width: 100%;
-    max-width: 360px;
+    max-width: 380px;
     max-height: 90vh;
     overflow-y: auto;
-    padding: var(--space-lg);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-    text-align: center;
-}
-
-.payment-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-sm);
-}
-
-.payment-modal-header h3 {
-    font-size: 1.1rem;
-    letter-spacing: 1px;
-    color: var(--color-text);
+    padding: 28px 24px 24px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35), 0 4px 14px rgba(15, 23, 42, 0.12);
 }
 
 .payment-modal-close {
-    background: none;
-    font-size: 1.2rem;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-bg);
     color: var(--color-text-muted);
-    padding: 4px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
 }
 
 .payment-modal-close:hover {
+    background: #e5e9ee;
     color: var(--color-text);
 }
 
 .payment-modal-total {
-    background: var(--color-bg);
-    border-radius: var(--radius);
-    padding: var(--space-md);
-    margin-bottom: var(--space-md);
+    text-align: center;
+    padding: 4px 0 20px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .payment-modal-total span {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 600;
     color: var(--color-text-muted);
-    letter-spacing: 1px;
-    margin-bottom: 4px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
 }
 
 .payment-modal-total b {
-    font-size: 1.9rem;
-    color: var(--color-primary);
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: var(--color-text);
+    letter-spacing: -0.5px;
 }
 
 .payment-step {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: 10px;
 }
 
-.payment-method-btn {
+.payment-step-intro {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 2px;
+}
+
+.payment-option-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: left;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.payment-option-row:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 14px rgba(30, 58, 138, 0.12);
+    transform: translateY(-1px);
+}
+
+.payment-option-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 18px 0;
-    border-radius: var(--radius);
-    font-size: 1.05rem;
+    font-size: 1.15rem;
+}
+
+.payment-option-icon--cash {
+    background: rgba(13, 148, 136, 0.12);
+}
+
+.payment-option-icon--qr {
+    background: rgba(30, 58, 138, 0.1);
+}
+
+.payment-option-icon--credit {
+    background: rgba(147, 51, 234, 0.1);
+}
+
+.payment-option-text {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.payment-option-title {
     font-weight: 700;
-    color: #ffffff;
+    font-size: 0.95rem;
+    color: var(--color-text);
 }
 
-.payment-method-btn span {
-    font-size: 1.2rem;
+.payment-option-subtitle {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
 }
 
-.payment-method-btn--cash {
-    background: var(--color-accent);
-}
-
-.payment-method-btn--cash:hover {
-    background: #0b7c72;
-}
-
-.payment-method-btn--qr {
-    background: var(--color-primary);
-}
-
-.payment-method-btn--qr:hover {
-    background: var(--color-primary-dark);
-}
-
-.payment-method-btn--credit {
-    background: #9333ea;
-}
-
-.payment-method-btn--credit:hover {
-    background: #7e22ce;
+.payment-option-chevron {
+    flex-shrink: 0;
+    font-size: 1.3rem;
+    color: #c3cad6;
 }
 
 .payment-modal-cancel {
-    margin-top: var(--space-sm);
+    margin-top: 6px;
     background: none;
     color: var(--color-text-muted);
     font-weight: 600;
+    font-size: 0.85rem;
     padding: 8px 0;
 }
 
@@ -1062,9 +1128,41 @@
     color: var(--color-text);
 }
 
+.payment-step-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.payment-step-back {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-step-back:hover {
+    background: #e5e9ee;
+}
+
+.payment-step-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-text);
+}
+
 .payment-field-label {
-    font-size: 0.75rem;
-    letter-spacing: 1px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
     color: var(--color-text-muted);
     text-align: left;
 }
@@ -1073,7 +1171,7 @@
     width: 100%;
     padding: 16px;
     border: 2px solid var(--color-border);
-    border-radius: var(--radius);
+    border-radius: 14px;
     font-size: 1.7rem;
     text-align: center;
     font-weight: 700;
@@ -1082,6 +1180,7 @@
 .payment-cash-input:focus {
     outline: none;
     border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1);
 }
 
 .payment-change-row {
@@ -1089,17 +1188,18 @@
     justify-content: space-between;
     align-items: center;
     background: var(--color-bg);
-    border-radius: var(--radius);
-    padding: 10px 14px;
+    border-radius: 14px;
+    padding: 12px 16px;
 }
 
 .payment-change-row span {
     color: var(--color-text-muted);
     font-size: 0.85rem;
+    font-weight: 600;
 }
 
 .payment-change-row b {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     color: var(--color-accent);
 }
 
@@ -1111,9 +1211,11 @@
     background: var(--color-primary);
     color: #ffffff;
     padding: 16px 0;
-    border-radius: var(--radius);
+    border-radius: 14px;
     font-weight: 700;
     font-size: 1.02rem;
+    margin-top: 6px;
+    box-shadow: 0 6px 16px rgba(30, 58, 138, 0.25);
 }
 
 .payment-complete-btn:hover {
@@ -1123,28 +1225,18 @@
 .payment-complete-btn:disabled {
     opacity: 0.55;
     cursor: not-allowed;
-}
-
-.payment-back-btn {
-    background: none;
-    color: var(--color-text-muted);
-    font-weight: 600;
-    padding: 6px 0;
-}
-
-.payment-back-btn:hover {
-    color: var(--color-text);
+    box-shadow: none;
 }
 
 .payment-qr-display {
     width: 190px;
     height: 190px;
-    margin: 0 auto;
+    margin: 4px auto 0;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
+    border-radius: 16px;
     overflow: hidden;
     background: #ffffff;
 }
@@ -1159,21 +1251,46 @@
     font-size: 0.8rem;
     color: var(--color-text-muted);
     padding: var(--space-md);
+    text-align: center;
 }
 
 .payment-qr-caption {
     font-size: 0.8rem;
     color: var(--color-text-muted);
+    text-align: center;
 }
 
 .payment-credit-note {
     font-size: 0.9rem;
     color: var(--color-text);
     background: var(--color-bg);
-    border-radius: var(--radius);
+    border-radius: 14px;
     padding: var(--space-md);
     text-align: left;
     line-height: 1.5;
+}
+
+.popup-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.popup-icon-badge--danger {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--color-danger);
+    margin: 0 auto 12px;
+}
+
+.popup-icon-badge--hold {
+    background: rgba(30, 58, 138, 0.1);
+    color: var(--color-primary);
 }
 
 /* ---------- HELD BILLS ---------- */
@@ -1184,7 +1301,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(17, 24, 39, 0.6);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1193,40 +1312,56 @@
 }
 
 .held-bills-box {
+    position: relative;
     background: #ffffff;
-    border-radius: var(--radius);
+    border-radius: 20px;
     width: 100%;
-    max-width: 420px;
+    max-width: 440px;
     max-height: 80vh;
     overflow-y: auto;
-    padding: var(--space-lg);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    padding: 28px 24px 24px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35), 0 4px 14px rgba(15, 23, 42, 0.12);
 }
 
 .held-bills-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-md);
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .held-bills-header h3 {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.held-bills-subtitle {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-top: 1px;
 }
 
 .held-bills-list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: 10px;
 }
 
 .held-bill-card {
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    padding: 12px;
+    border-radius: 14px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.held-bill-card:hover {
+    border-color: #c3cad6;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .held-bill-card-top {
@@ -1234,6 +1369,10 @@
     justify-content: space-between;
     align-items: center;
     font-weight: 700;
+}
+
+.held-bill-card-top span:last-child {
+    color: var(--color-primary);
 }
 
 .held-bill-card-meta {
@@ -1251,8 +1390,8 @@
     flex: 1;
     background: var(--color-primary);
     color: #ffffff;
-    padding: 8px 0;
-    border-radius: 4px;
+    padding: 9px 0;
+    border-radius: 10px;
     font-weight: 600;
     font-size: 0.85rem;
 }
@@ -1263,16 +1402,16 @@
 
 .held-bill-discard-btn {
     flex: 1;
-    background: #fde2e2;
+    background: var(--color-bg);
     color: var(--color-danger);
-    padding: 8px 0;
-    border-radius: 4px;
+    padding: 9px 0;
+    border-radius: 10px;
     font-weight: 600;
     font-size: 0.85rem;
 }
 
 .held-bill-discard-btn:hover {
-    background: #fbc9c9;
+    background: #fde2e2;
 }
 
 .held-bills-empty {
@@ -1627,7 +1766,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(31, 41, 55, 0.6);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1637,24 +1778,35 @@
 
 .barcode-not-found-box {
     background: #ffffff;
-    border-radius: var(--radius);
+    border-radius: 20px;
     width: 100%;
     max-width: 340px;
-    padding: var(--space-lg);
+    padding: 28px 24px 24px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35), 0 4px 14px rgba(15, 23, 42, 0.12);
 }
 
 .barcode-not-found-title {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: var(--color-danger);
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--color-text);
     margin-bottom: 4px;
 }
 
-.barcode-not-found-code {
+.barcode-not-found-subtitle {
+    font-size: 0.8rem;
     color: var(--color-text-muted);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.barcode-not-found-code {
+    display: inline-block;
+    color: var(--color-text);
     font-family: 'Courier New', monospace;
+    background: var(--color-bg);
+    border-radius: 8px;
+    padding: 6px 12px;
     margin-bottom: var(--space-md);
 }
 
@@ -1668,8 +1820,8 @@
 .barcode-not-found-actions button {
     display: block;
     width: 100%;
-    padding: 10px 0;
-    border-radius: var(--radius);
+    padding: 12px 0;
+    border-radius: 12px;
     font-weight: 600;
     text-decoration: none;
     text-align: center;
@@ -1678,6 +1830,7 @@
 .btn-create-product {
     background: var(--color-primary);
     color: #ffffff !important;
+    box-shadow: 0 6px 16px rgba(30, 58, 138, 0.25);
 }
 
 .btn-create-product:hover {
@@ -1694,12 +1847,12 @@
 }
 
 .btn-cancel-barcode {
-    background: #eef1f5;
+    background: var(--color-bg);
     color: var(--color-text);
 }
 
 .btn-cancel-barcode:hover {
-    background: #dde3ea;
+    background: #e5e9ee;
 }
 
 .receipt-qr-image {

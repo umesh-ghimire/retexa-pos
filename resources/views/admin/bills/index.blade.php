@@ -4,7 +4,7 @@
 
 @section('styles')
     {{-- Reusing the receipt styling from the billing screen so the "View Bill" modal looks like a real receipt --}}
-    <link rel="stylesheet" href="{{ asset('css/billing.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/billing.css') }}?v={{ filemtime(public_path('css/billing.css')) }}">
     <style>
         :root {
             --print-paper-width: {{ $printerVars['width'] }};
@@ -134,12 +134,13 @@
 </div>
 <script>const printerCopies = {{ $printerVars['copies'] }};</script>
 <script>const printerPaperWidthMm = {{ $printerPaperWidthMm }};</script>
+<script>const printerVars = @json($printerVars);</script>
 @endsection
 
 @section('scripts')
-    <script src="{{ asset('js/receipt-renderer.js') }}"></script>
+    <script src="{{ asset('js/receipt-renderer.js') }}?v={{ filemtime(public_path('js/receipt-renderer.js')) }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
-    <script src="{{ asset('admin-assets/js/admin-bills.js') }}"></script>
+    <script src="{{ asset('admin-assets/js/admin-bills.js') }}?v={{ filemtime(public_path('admin-assets/js/admin-bills.js')) }}"></script>
     <script>
         const paymentQrImageUrl = @json($paymentQrUrl);
     </script>

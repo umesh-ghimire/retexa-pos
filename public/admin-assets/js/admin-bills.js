@@ -3,7 +3,7 @@ function openBillModal(sale, tpl) {
     const order = getSectionOrder(template);
 
     const container = document.getElementById('billModalContent');
-    applyReceiptContainerClasses(container, template, printerPaperWidthMm);
+    applyReceiptContainerClasses(container, template, printerVars);
 
     container.innerHTML = renderReceiptForTemplate(template, sale, order);
 
