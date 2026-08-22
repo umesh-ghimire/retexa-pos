@@ -884,80 +884,274 @@
 /* ---------- PRINT-ONLY STYLES ---------- */
 /* When printing, hide everything except the receipt content,
    and size the paper itself to match real thermal paper widths. */
+/* ============================================================
+   THERMAL RECEIPT PRINTING
+   Printer-independent browser fallback
+   Paper width comes from Setting::printerCssVars()
+   ============================================================ */
+
 @media print {
+
+    /*
+     * The browser must treat the configured thermal-paper width
+     * as the actual page width.
+     *
+     * Height is automatic for thermal receipts.
+     * We intentionally do NOT force a 200mm page.
+     */
     @page {
-        size: var(--print-paper-width, 72mm) var(--print-page-length, 200mm);
+        size: var(--print-paper-width, 58mm) auto;
         margin: 0;
     }
 
-    body * {
-        visibility: hidden;
-    }
-    .receipt-content, .receipt-content * {
-        visibility: visible;
-    }
-    .receipt-content {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: var(--print-paper-width, 72mm) !important;
-        max-width: var(--print-paper-width, 72mm) !important;
-        box-sizing: border-box;
-        padding: 2mm 3mm;
-        box-shadow: none !important;
-        font-family: Arial, Helvetica, sans-serif !important;
-        font-size: var(--print-font-size, 21px);
-        font-weight: var(--print-font-weight, 800);
-        line-height: 1.45;
-        color: #000000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .receipt-content * {
-        color: #000000 !important;
-    }
-
-    .receipt-content .receipt-torn-edge {
-        display: none;
-    }
-    .receipt-overlay, .receipt-box {
-        position: static;
-        box-shadow: none;
-        background: none;
-        max-width: 100%;
-    }
-    .receipt-actions {
-        display: none;
-    }
-
-    /* Admin Reprint uses a Bootstrap modal to hold the receipt.
-       .modal has position:fixed by default, which creates its own
-       containing block for .receipt-content's position:absolute —
-       reset it the same way the /billing overlay is reset above,
-       so both print paths behave identically. */
-    #billModal, #billModal .modal-dialog, #billModal .modal-content, #billModal .modal-body {
-        position: static !important;
-        display: block !important;
-        max-width: 100% !important;
-        width: auto !important;
+    /*
+     * Hide the application completely.
+     */
+    html,
+    body {
+        width: var(--print-paper-width, 58mm) !important;
+        min-width: 0 !important;
+        max-width: var(--print-paper-width, 58mm) !important;
         margin: 0 !important;
         padding: 0 !important;
-        border: none !important;
+        background: #ffffff !important;
+    }
+
+    body * {
+        visibility: hidden !important;
+    }
+
+    /*
+     * Show only the receipt.
+     */
+    .receipt-content,
+    .receipt-content * {
+        visibility: visible !important;
+    }
+
+    /*
+     * Receipt becomes the actual printable page.
+     */
+    .receipt-content {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+
+        width: var(--print-paper-width, 58mm) !important;
+        max-width: var(--print-paper-width, 58mm) !important;
+        min-width: 0 !important;
+
+        box-sizing: border-box !important;
+
+        margin: 0 !important;
+
+        /*
+         * Keep the existing configurable margins.
+         * The receipt renderer also applies them.
+         */
+        padding-top: 2mm !important;
+        padding-right: var(--print-margin-right, 3mm) !important;
+        padding-bottom: 2mm !important;
+        padding-left: var(--print-margin-left, 3mm) !important;
+
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: var(--print-font-size, 16px) !important;
+        font-weight: var(--print-font-weight, 700) !important;
+        line-height: 1.35 !important;
+
+        color: #000000 !important;
+
+        background: #ffffff !important;
+
         box-shadow: none !important;
-        background: none !important;
-        transform: none !important;
+        border: none !important;
+
+        overflow: visible !important;
+
+        /*
+         * Do not allow browser flex/grid/container rules
+         * to shrink the receipt.
+         */
+        flex: none !important;
+    }
+
+    /*
+     * Everything inside the receipt uses the same physical
+     * width and cannot create horizontal overflow.
+     */
+    .receipt-content * {
+        box-sizing: border-box !important;
+        color: #000000 !important;
+    }
+
+    /*
+     * Prevent long words/product names from forcing the
+     * receipt wider than the paper.
+     */
+    .receipt-content,
+    .receipt-content table,
+    .receipt-content td,
+    .receipt-content th,
+    .receipt-content div,
+    .receipt-content span {
+        max-width: 100% !important;
+    }
+
+    .receipt-content table {
+        width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+    }
+
+    .receipt-content td,
+    .receipt-content th {
+        overflow-wrap: anywhere !important;
+        word-break: normal !important;
+    }
+
+    /*
+     * Thermal printers do not need the decorative torn edge.
+     */
+    .receipt-content .receipt-torn-edge {
+        display: none !important;
+    }
+
+    /*
+     * Remove application UI.
+     */
+    .receipt-overlay,
+    .receipt-box {
+        position: static !important;
+
+        width: auto !important;
+        max-width: none !important;
+        min-width: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+
         overflow: visible !important;
     }
-    #billModal .modal-header, #billModal .modal-footer {
-        display: none !important;
 
-        body {
-        min-width: 0 !important;
+    .receipt-actions {
+        display: none !important;
     }
-    .container {
+
+    /*
+     * Admin Bill History modal.
+     * Bootstrap's modal must not create another print
+     * containing block.
+     */
+    #billModal,
+    #billModal .modal-dialog,
+    #billModal .modal-content,
+    #billModal .modal-body {
+        position: static !important;
+
+        display: block !important;
+
+        width: auto !important;
+        max-width: none !important;
         min-width: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+
+        transform: none !important;
+
+        overflow: visible !important;
     }
+
+    #billModal .modal-header,
+    #billModal .modal-footer {
+        display: none !important;
+    }
+
+    /*
+     * Bootstrap/grid containers must not impose desktop widths
+     * during thermal printing.
+     */
+    .container,
+    .container-fluid,
+    .row,
+    [class*="col-"] {
+        width: auto !important;
+        max-width: none !important;
+        min-width: 0 !important;
+
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    /*
+     * Do not print browser-only UI.
+     */
+    nav,
+    header,
+    footer,
+    .navbar,
+    .sidebar,
+    .admin-sidebar,
+    .receipt-actions,
+    button,
+    input,
+    select,
+    textarea {
+        display: none !important;
+    }
+
+    /*
+     * Prevent links from showing URLs after their text.
+     */
+    a::after {
+        content: none !important;
+    }
+
+    /*
+     * Keep images inside the paper.
+     */
+    .receipt-content img,
+    .receipt-content svg {
+        max-width: 100% !important;
+    }
+
+    /*
+     * QR code must never exceed printable width.
+     */
+    .receipt-content .receipt-qr-image,
+    .receipt-content .receipt-qr-placeholder {
+        max-width: 100% !important;
+    }
+
+    /*
+     * Barcode must remain inside the receipt.
+     */
+    .receipt-content .receipt-barcode-section {
+        max-width: 100% !important;
+        overflow: hidden !important;
+    }
+
+    /*
+     * Prevent the browser from adding unexpected page breaks
+     * inside the receipt.
+     */
+    .receipt-content,
+    .receipt-content table,
+    .receipt-content tbody,
+    .receipt-content tr {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }
 }
 
@@ -1429,36 +1623,191 @@
 
 /* ---------- BILL TEMPLATE PREVIEW (adapts to paper width) ---------- */
 
-.receipt-content.paper-58mm {
-    width: 220px;
-}
+/* ============================================================
+   RECEIPT TEMPLATE ALIGNMENT
+   SINGLE SOURCE OF TRUTH
+   ============================================================ */
 
-.receipt-content.paper-80mm {
-    width: 300px;
-}
+/*
+ * IMPORTANT:
+ *
+ * Do NOT set alignment based on printer width.
+ * Do NOT set alignment based on 48mm / 58mm / 80mm.
+ *
+ * Alignment comes ONLY from the Bill Template:
+ *
+ *     tpl.alignment
+ *
+ * The JavaScript renderer applies:
+ *
+ *     text-align: left
+ *     text-align: center
+ *     text-align: right
+ *
+ * These classes are only compatibility fallbacks for
+ * older designer previews.
+ */
 
-.receipt-content.font-small {
-    font-size: 0.72rem;
-}
-
-.receipt-content.font-medium {
-    font-size: 0.85rem;
-}
-
-.receipt-content.font-large {
-    font-size: 1rem;
-}
+/* ---------- LEFT ---------- */
 
 .receipt-content.align-left {
-    text-align: left;
+    text-align: left !important;
 }
+
+.receipt-content.align-left .receipt-shop-name,
+.receipt-content.align-left .receipt-meta,
+.receipt-content.align-left .receipt-footer,
+.receipt-content.align-left .receipt-qr-section,
+.receipt-content.align-left .receipt-barcode-section {
+    text-align: left !important;
+}
+
+.receipt-content.align-left .receipt-logo-circle {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.receipt-content.align-left .receipt-items-table th,
+.receipt-content.align-left .receipt-items-table td {
+    text-align: left !important;
+}
+
+
+/* ---------- CENTER ---------- */
 
 .receipt-content.align-center {
-    text-align: center;
+    text-align: center !important;
 }
 
+.receipt-content.align-center .receipt-shop-name,
+.receipt-content.align-center .receipt-meta,
+.receipt-content.align-center .receipt-footer,
+.receipt-content.align-center .receipt-qr-section,
+.receipt-content.align-center .receipt-barcode-section {
+    text-align: center !important;
+}
+
+.receipt-content.align-center .receipt-logo-circle {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+
+/*
+ * IMPORTANT:
+ *
+ * The item table must remain a real table.
+ * Center alignment should not destroy the numeric
+ * column alignment.
+ */
+
+.receipt-content.align-center .receipt-items-table th:first-child,
+.receipt-content.align-center .receipt-items-table td:first-child {
+    text-align: center !important;
+}
+
+.receipt-content.align-center .receipt-items-table th:last-child,
+.receipt-content.align-center .receipt-items-table td:last-child {
+    text-align: right !important;
+}
+
+
+/* ---------- RIGHT ---------- */
+
 .receipt-content.align-right {
-    text-align: right;
+    text-align: right !important;
+}
+
+.receipt-content.align-right .receipt-shop-name,
+.receipt-content.align-right .receipt-meta,
+.receipt-content.align-right .receipt-footer,
+.receipt-content.align-right .receipt-qr-section,
+.receipt-content.align-right .receipt-barcode-section {
+    text-align: right !important;
+}
+
+.receipt-content.align-right .receipt-logo-circle {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+}
+
+
+/*
+ * Keep receipt item columns structurally correct.
+ *
+ * Item/name follows template alignment.
+ * Quantity/unit/price/total remain usable columns.
+ */
+
+.receipt-content.align-right .receipt-items-table th:first-child,
+.receipt-content.align-right .receipt-items-table td:first-child {
+    text-align: right !important;
+}
+
+.receipt-content.align-right .receipt-items-table th:last-child,
+.receipt-content.align-right .receipt-items-table td:last-child {
+    text-align: right !important;
+}
+
+
+/* ============================================================
+   META / TOTAL ROW ALIGNMENT
+   ============================================================ */
+
+/*
+ * These rows use two columns.
+ *
+ * The label and value should stay separated instead of
+ * both inheriting the same text alignment.
+ */
+
+.receipt-content .receipt-meta-row,
+.receipt-content .receipt-total-row {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.receipt-content .receipt-meta-row > span:last-child,
+.receipt-content .receipt-total-row > span:last-child {
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   DO NOT LET OLD PAPER CLASSES CHANGE WIDTH
+   ============================================================ */
+
+/*
+ * Width is now controlled by the renderer/printer.
+ *
+ * Therefore these old preview widths must NOT override
+ * the actual receipt width.
+ */
+
+.receipt-content.paper-58mm,
+.receipt-content.paper-80mm {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   OLD FONT CLASSES
+   ============================================================ */
+
+/*
+ * Font size is controlled by JavaScript:
+ *
+ * resolveTemplateFontSize(tpl)
+ *
+ * Keep these classes only for compatibility.
+ * They must not override the template's actual font size.
+ */
+
+.receipt-content.font-small,
+.receipt-content.font-medium,
+.receipt-content.font-large {
+    /* Intentionally empty */
 }
 
 .receipt-content .receipt-logo {

@@ -11,6 +11,8 @@
             --print-page-length: {{ $printerVars['length'] }};
             --print-font-size: {{ $printerVars['font_size'] }};
             --print-font-weight: {{ $printerVars['font_weight'] }};
+            --print-margin-left: {{ $printerVars['margin_left'] }};
+            --print-margin-right: {{ $printerVars['margin_right'] }};
         }
     </style>
 @endsection

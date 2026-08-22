@@ -7,6 +7,9 @@ use App\Models\Customer;
 use App\Models\HeldBill;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Services\Printing\EscPosReceiptRenderer;
+use App\Services\Printing\PrinterProfileRepository;
+use App\Services\Printing\PrintBridgeClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,46 +20,49 @@ class BillingController extends Controller
     /**
      * Show the billing/POS screen.
      */
- public function index()
-{
-    $template = BillTemplate::where('is_default', true)->first();
+    public function index()
+    {
+        $template = BillTemplate::where('is_default', true)->first();
 
-    $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
-    $paymentQrUrl = $paymentQrPath
-        ? asset('storage/' . $paymentQrPath)
-        : null;
+        $paymentQrPath = \App\Models\Setting::get('payment_qr_path');
+        $paymentQrUrl = $paymentQrPath
+            ? asset('storage/' . $paymentQrPath)
+            : null;
 
-    $shopLogoUrl = ($template && $template->show_logo && $template->logo_path)
-        ? asset('storage/' . $template->logo_path)
-        : null;
+        $shopLogoUrl = ($template && $template->show_logo && $template->logo_path)
+            ? asset('storage/' . $template->logo_path)
+            : null;
 
-    $printerPaperWidthMm = (float) \App\Models\Setting::get(
-        'printer_paper_width_mm',
-        72
-    );
+        $printerPaperWidthMm = (float) \App\Models\Setting::get(
+            'printer_paper_width_mm',
+            72
+        );
 
         $printerVars = \App\Models\Setting::printerCssVars();
 
-
-     return view('billing.index', [
-        'shopName' => $template->shop_name ?? 'My Shop',
-        'template' => $template,
-        'defaultDiscount' => \App\Models\Setting::get('default_discount', 0),
-        'paymentQrUrl' => $paymentQrUrl,
-        'shopLogoUrl' => $shopLogoUrl,
-        'printerVars' => $printerVars,
-        'printerPaperWidthMm' => $printerPaperWidthMm,
-        'isOwner' => auth()->user()->isOwner(),
-    ]);
-}
+        return view('billing.index', [
+            'shopName' => $template->shop_name ?? 'My Shop',
+            'template' => $template,
+            'defaultDiscount' => \App\Models\Setting::get('default_discount', 0),
+            'paymentQrUrl' => $paymentQrUrl,
+            'shopLogoUrl' => $shopLogoUrl,
+            'printerVars' => $printerVars,
+            'printerPaperWidthMm' => $printerPaperWidthMm,
+            'isOwner' => auth()->user()->isOwner(),
+        ]);
+    }
 
     /**
-     * Save a completed sale: creates the bill, its line items,
-     * deducts stock for any inventory-linked items, and returns
-     * everything needed to render the printable receipt.
+     * Save a completed sale, deduct stock, and send the receipt
+     * directly to the configured ESC/POS printer through the
+     * RETEXA Print Bridge.
      */
-    public function store(Request $request)
-    {
+    public function store(
+        Request $request,
+        EscPosReceiptRenderer $renderer,
+        PrinterProfileRepository $profiles,
+        PrintBridgeClient $bridge
+    ) {
         $validated = $request->validate([
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:50'],
@@ -75,21 +81,29 @@ class BillingController extends Controller
         try {
             $sale = DB::transaction(function () use ($validated) {
 
-                // Find or create the customer, if any details were given
+                // Find or create the customer, if any details were given.
                 $customerId = null;
+
                 if (! empty($validated['customer_phone'])) {
                     $customer = Customer::firstOrCreate(
                         ['phone' => $validated['customer_phone']],
                         ['name' => $validated['customer_name'] ?? null]
                     );
+
                     $customerId = $customer->id;
                 } elseif (! empty($validated['customer_name'])) {
-                    $customerId = Customer::create(['name' => $validated['customer_name']])->id;
+                    $customerId = Customer::create([
+                        'name' => $validated['customer_name'],
+                    ])->id;
                 }
 
-                $activeTemplate = BillTemplate::where('is_default', true)->first();
+                $activeTemplate = BillTemplate::where(
+                    'is_default',
+                    true
+                )->first();
 
-                // Create the sale with a temporary bill number (fixed right after)
+                // Create the sale with a temporary bill number.
+                // It is replaced with the sale ID after creation.
                 $sale = Sale::create([
                     'bill_number' => 'TEMP-' . uniqid(),
                     'customer_id' => $customerId,
@@ -112,14 +126,18 @@ class BillingController extends Controller
                     $quantity = (float) $itemData['quantity'];
 
                     if (! empty($itemData['product_id'])) {
-                        $product = Product::lockForUpdate()->find($itemData['product_id']);
+                        $product = Product::lockForUpdate()->find(
+                            $itemData['product_id']
+                        );
 
-                        // Trust the database price, not whatever the browser sent
+                        // Trust the database price, not the browser price.
                         $unitPrice = (float) $product->price;
 
                         if ($product->stock < $quantity) {
                             throw ValidationException::withMessages([
-                                'items' => "Not enough stock for \"{$product->name}\". Available: {$product->stock}.",
+                                'items' =>
+                                    "Not enough stock for \"{$product->name}\". " .
+                                    "Available: {$product->stock}.",
                             ]);
                         }
                     }
@@ -137,17 +155,39 @@ class BillingController extends Controller
                     ]);
 
                     if ($product) {
-                        $product->adjustStock('out', $quantity, "Sold in bill #{$sale->id}", Auth::id());
+                        $product->adjustStock(
+                            'out',
+                            $quantity,
+                            "Sold in bill #{$sale->id}",
+                            Auth::id()
+                        );
                     }
                 }
 
-                $discount = min((float) ($validated['discount'] ?? 0), $subtotal);
+                $discount = min(
+                    (float) ($validated['discount'] ?? 0),
+                    $subtotal
+                );
+
                 $total = max($subtotal - $discount, 0);
-                $changeAmount = max($validated['cash_received'] - $total, 0);
-                $dueAmount = max($total - $validated['cash_received'], 0);
+
+                $changeAmount = max(
+                    $validated['cash_received'] - $total,
+                    0
+                );
+
+                $dueAmount = max(
+                    $total - $validated['cash_received'],
+                    0
+                );
 
                 $sale->update([
-                    'bill_number' => str_pad($sale->id, 6, '0', STR_PAD_LEFT),
+                    'bill_number' => str_pad(
+                        $sale->id,
+                        6,
+                        '0',
+                        STR_PAD_LEFT
+                    ),
                     'subtotal' => $subtotal,
                     'discount' => $discount,
                     'total' => $total,
@@ -158,25 +198,88 @@ class BillingController extends Controller
                 return $sale;
             });
         } catch (ValidationException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
         }
 
-        $sale->load(['items.product', 'items.unit', 'customer', 'createdBy']);
+        /*
+         * Load everything required by the ESC/POS receipt renderer.
+         *
+         * billTemplate is important because the renderer uses the
+         * actual bill design selected when the sale was created.
+         */
+        $sale->load([
+            'items.product',
+            'items.unit',
+            'customer',
+            'createdBy',
+            'billTemplate',
+        ]);
+
+        /*
+         * Printing happens AFTER the database transaction has
+         * successfully committed.
+         *
+         * Therefore, if the printer or Print Bridge is offline,
+         * the completed sale is NOT rolled back.
+         */
+        $printResult = null;
+        $printError = null;
+        $printWarnings = [];
+
+        try {
+            $template = $sale->billTemplate;
+
+            if (! $template) {
+                $printError = 'No bill template is assigned to this sale.';
+            } else {
+                // Get the configured default printer profile.
+                $profile = $profiles->default();
+
+                // Convert the completed sale into ESC/POS bytes.
+                $rendered = $renderer->render(
+                    $sale,
+                    $template,
+                    $profile
+                );
+
+                $printWarnings = $rendered->warnings;
+
+                // Send the ESC/POS bytes to the local Print Bridge.
+                $printResult = $bridge->print(
+                    $rendered,
+                    'sale-' .
+                    $sale->id .
+                    '-' .
+                    now()->format('YmdHis')
+                );
+            }
+        } catch (\Throwable $e) {
+            // Printing failure must not invalidate the completed sale.
+            report($e);
+
+            $printError = $e->getMessage();
+        }
 
         return response()->json([
             'bill_number' => $sale->bill_number,
             'date' => $sale->created_at->format('Y-m-d'),
             'created_at' => $sale->created_at->toIso8601String(),
+
             'customer_name' => $sale->customer->name ?? null,
             'cashier_name' => optional($sale->createdBy)->name,
             'customer_phone' => $sale->customer->phone ?? null,
+
             'show_qr' => (bool) $sale->show_qr,
+
             'subtotal' => (float) $sale->subtotal,
             'discount' => (float) $sale->discount,
             'total' => (float) $sale->total,
             'cash_received' => (float) $sale->cash_received,
             'change_amount' => (float) $sale->change_amount,
             'due_amount' => (float) $sale->due_amount,
+
             'items' => $sale->items->map(fn ($item) => [
                 'name' => $item->item_name,
                 'quantity' => (float) $item->quantity,
@@ -185,12 +288,22 @@ class BillingController extends Controller
                 'sku' => $item->product->sku ?? null,
                 'unit' => $item->unit->short_code ?? null,
             ]),
+
+            /*
+             * Printing status is returned to the billing JavaScript.
+             */
+            'printing' => [
+                'success' => $printResult !== null,
+                'error' => $printError,
+                'warnings' => $printWarnings,
+                'printer' => $printResult['printer'] ?? null,
+                'job_id' => $printResult['job_id'] ?? null,
+            ],
         ]);
     }
 
     /**
-     * Look up a single product by its exact barcode, for the
-     * barcode scanner input on the billing screen.
+     * Look up a single product by its exact barcode.
      */
     public function lookupBarcode(Request $request)
     {
@@ -204,7 +317,9 @@ class BillingController extends Controller
             ->first();
 
         if (! $product) {
-            return response()->json(['message' => 'No product found with this barcode.'], 404);
+            return response()->json([
+                'message' => 'No product found with this barcode.',
+            ], 404);
         }
 
         return response()->json([
@@ -219,7 +334,7 @@ class BillingController extends Controller
 
     /**
      * Live product search for the billing screen's unified
-     * search/scan box. Read-only, matches name or SKU.
+     * search/scan box.
      */
     public function searchProducts(Request $request)
     {
@@ -233,7 +348,7 @@ class BillingController extends Controller
             ->where('status', 'active')
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('sku', 'like', "%{$query}%");
+                    ->orWhere('sku', 'like', "%{$query}%");
             })
             ->orderBy('name')
             ->limit(10)
@@ -253,8 +368,7 @@ class BillingController extends Controller
     }
 
     /**
-     * List the current cashier's held bills, newest first, for the
-     * "Held Bills" panel on the billing screen.
+     * List the current cashier's held bills.
      */
     public function heldBills()
     {
@@ -264,8 +378,18 @@ class BillingController extends Controller
             ->map(function ($heldBill) {
                 $items = $heldBill->items ?? [];
                 $itemCount = count($items);
-                $subtotal = array_reduce($items, fn ($carry, $item) => $carry + (float) ($item['line_total'] ?? 0), 0);
-                $total = max($subtotal - (float) $heldBill->discount, 0);
+
+                $subtotal = array_reduce(
+                    $items,
+                    fn ($carry, $item) =>
+                        $carry + (float) ($item['line_total'] ?? 0),
+                    0
+                );
+
+                $total = max(
+                    $subtotal - (float) $heldBill->discount,
+                    0
+                );
 
                 return [
                     'id' => $heldBill->id,
@@ -282,8 +406,7 @@ class BillingController extends Controller
     }
 
     /**
-     * Put the current in-progress bill on hold so the cashier can
-     * start a fresh bill and come back to this one later.
+     * Put the current in-progress bill on hold.
      */
     public function holdBill(Request $request)
     {
@@ -301,7 +424,10 @@ class BillingController extends Controller
             'items.*.unit_label' => ['nullable', 'string'],
         ]);
 
-        $countSoFar = HeldBill::where('held_by', Auth::id())->count();
+        $countSoFar = HeldBill::where(
+            'held_by',
+            Auth::id()
+        )->count();
 
         $heldBill = HeldBill::create([
             'held_by' => Auth::id(),
@@ -312,12 +438,14 @@ class BillingController extends Controller
             'items' => $validated['items'],
         ]);
 
-        return response()->json(['id' => $heldBill->id, 'label' => $heldBill->label]);
+        return response()->json([
+            'id' => $heldBill->id,
+            'label' => $heldBill->label,
+        ]);
     }
 
     /**
-     * Restore a held bill back onto the billing screen and remove it
-     * from the held list.
+     * Restore a held bill back onto the billing screen.
      */
     public function restoreHeldBill(HeldBill $heldBill)
     {
@@ -348,6 +476,8 @@ class BillingController extends Controller
 
         $heldBill->delete();
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+        ]);
     }
 }

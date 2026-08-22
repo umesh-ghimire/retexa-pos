@@ -10,6 +10,8 @@
             --print-page-length: {{ $printerVars['length'] }};
             --print-font-size: {{ $printerVars['font_size'] }};
             --print-font-weight: {{ $printerVars['font_weight'] }};
+            --print-margin-left: {{ $printerVars['margin_left'] }};
+            --print-margin-right: {{ $printerVars['margin_right'] }};
         }
         body { font-family: Arial, sans-serif; background:#f4f6f8; padding:24px; }
         .test-controls { max-width:380px; margin:0 auto 20px; background:#fff; border-radius:8px; padding:16px 20px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center; }
